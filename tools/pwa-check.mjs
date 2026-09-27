@@ -205,6 +205,16 @@ check(
   `Chrome reports it installable${installErrors.length ? `: ${JSON.stringify(installErrors)}` : ''}`,
 );
 
+// ── install button ───────────────────────────────────────────────────────────
+// Chrome fires beforeinstallprompt once the page is installable; the menu then shows
+// "Install app" (src/ui/install.ts), so players needn't find it in Chrome's own menu.
+const offered = await waitFor(`!!document.querySelector('#front .chip.install:not([hidden])')`, 'the Install app button', 10000)
+  .then(() => true)
+  .catch(() => false);
+check(offered, 'the menu offers an Install app button');
+const manifestLink = await evaluate(`document.querySelector('link[rel=manifest]')?.getAttribute('crossorigin')`);
+check(manifestLink === 'use-credentials', `manifest link sends credentials (crossorigin=${manifestLink}), for password-protected previews`);
+
 // ── offline ───────────────────────────────────────────────────────────────────
 await send('Network.emulateNetworkConditions', {
   offline: true,

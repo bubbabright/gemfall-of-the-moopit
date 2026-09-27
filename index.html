@@ -6,7 +6,9 @@
   <meta name="description" content="GEMFALL — a match-3 gem game. Endless, timed and moves modes with cascades and power gems." />
   <meta name="theme-color" content="#000000" />
   <!-- Installable app: home-screen icon, full screen, offline (public/manifest.webmanifest). -->
-  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- use-credentials: on a password-protected preview (Vercel), Chrome must send the sign-in
+       cookie with the manifest request, or it gets a login page and never offers to install. -->
+  <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
   <link rel="icon" type="image/png" href="/icons/icon-192.png" />
   <title>GEMFALL — match-3</title>
   <style>
@@ -357,6 +359,12 @@
       text-transform: uppercase;
       color: #e2d4ff;
     }
+    #front .chip.install {
+      border-color: rgba(170, 110, 255, 0.7);
+      color: var(--text-hi);
+      padding: 10px 20px;
+    }
+    #front .chip.install[hidden] { display: none; }
     #front .resume small { font-size: 0.75rem; letter-spacing: 0.06em; color: var(--text-dim); }
     #front .best {
       margin: 0;

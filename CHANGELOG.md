@@ -15,7 +15,8 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 - Made for phone screens that show true black: darker backgrounds, no haze, and every bit of
   text bigger and easier to read.
 - You can add GEMFALL to your phone's home screen. It gets its own gem icon, opens full screen
-  without the browser bar, and works with no signal once you've played it. The screen stays on
+  without the browser bar, and works with no signal once you've played it. An **Install app**
+  button shows on the menu when your phone can install it. The screen stays on
   while you play. How-to is in the
   [README](README.md#put-it-on-your-home-screen).
 - Under the hood, the game now runs on Phaser 4, a newer version of the engine it's built on.

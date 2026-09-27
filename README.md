@@ -69,8 +69,9 @@ matches rarer. Every mode and difficulty keeps its own high score.
 
 ## Put it on your home screen
 
-On Android, open the game in **Chrome**, tap the **⋮** menu, then **Add to Home screen** (or
-**Install app**). You get a GEMFALL icon, and the game opens full screen with no browser bar.
+On Android, open the game in **Chrome** and tap **Install app** on the menu (it appears when
+your phone can install it). Or tap Chrome's **⋮** menu, then **Install app** or **Add to Home
+screen**. You get a GEMFALL icon, and the game opens full screen with no browser bar.
 Once you've played it, it also works with no signal.
 The screen stays on while you're playing.
 

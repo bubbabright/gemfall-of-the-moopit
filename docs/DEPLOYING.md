@@ -97,4 +97,9 @@ so the installable app and offline play work there (they don't on the plain-http
   in the environment's allowed domains and a token in `VERCEL_TOKEN`; then
   `npx vercel deploy --token "$VERCEL_TOKEN"` from the repo root.
 
+**Previews are password-protected by default** (Deployment Protection → Vercel Authentication).
+Phones then need to be signed in to Vercel to open the link at all. For testing on family
+phones, turn it off for previews (project Settings → Deployment Protection). The manifest link
+sends credentials, so installing also works on a protected preview when signed in.
+
 Don't point Vercel's production domain at `gemfall.moopit.fun`: DNS stays on Netlify.

@@ -181,7 +181,8 @@ the manifest parses and lists 192, 512 and maskable icons, the service worker ta
 a reload, Chrome reports no installability errors, the game boots to its menu with the network
 switched off, and every request the page and worker made went to the game's own origin. Like
 `playtest`, it needs a URL or the dev preview on `:4771`. It also checks that the plain preview
-(no `?sw`) registers no service worker, and that starting a game asks for a screen wake lock.
+(no `?sw`) registers no service worker, that starting a game asks for a screen wake lock, that
+the menu offers the Install app button, and that the manifest link sends credentials.
 
 ### Installable app
 
@@ -212,6 +213,12 @@ lets go on pause, game over and leaving the game, and asks again when the game c
 the foreground (the browser drops it in the background). Browsers that don't support it or
 refuse just dim as normal. The PWA gate stubs the API, so it proves the game *asked*, not that a
 phone's screen stayed on.
+
+**Install app button.** `src/ui/install.ts` keeps Chrome's `beforeinstallprompt` event and the
+menu shows an "Install app" chip while it's available; tapping it opens Chrome's install
+dialog. No event (already installed, Firefox, iOS), no button. The manifest link has
+`crossorigin="use-credentials"`: on a password-protected Vercel preview, Chrome otherwise fetches
+the manifest without the sign-in cookie, gets a login page, and never offers to install.
 
 No iPhone-only tags or icons: the players are on Android.
 

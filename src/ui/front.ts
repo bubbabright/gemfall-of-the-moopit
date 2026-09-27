@@ -13,6 +13,7 @@ import { haptics } from '../haptics';
 import { sfx } from '../audio/sfx';
 import { openSettings } from './settings';
 import { showCorners } from './corners';
+import { onInstallAvailability, promptInstall } from './install';
 
 /**
  * The front screen: the boot splash, then the menu, as one HTML page over the game canvas
@@ -127,8 +128,22 @@ function build(ui: HTMLElement): void {
   els.play = button('play', [el('span', '', ['Play Now'])], () => start({ mode, difficulty }));
   els.resumeSlot = el('div', 'resume-slot');
   els.best = el('p', 'best');
+  // Shown only while Chrome says the game can be installed (src/ui/install.ts).
+  const install = button('chip install', ['Install app'], () => void promptInstall());
+  onInstallAvailability((available) => {
+    install.hidden = !available;
+  });
 
-  const parts = [el('div', 'divider'), modes, chips, els.play, els.resumeSlot, els.best, el('p', 'foot', [BUILD_LABEL])];
+  const parts = [
+    el('div', 'divider'),
+    modes,
+    chips,
+    els.play,
+    els.resumeSlot,
+    els.best,
+    install,
+    el('p', 'foot', [BUILD_LABEL]),
+  ];
   // Stagger for the fade-in (see .ui > * in index.html).
   parts.forEach((part, i) => part.style.setProperty('--n', String(i)));
   ui.append(...parts);

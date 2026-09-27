@@ -8,6 +8,8 @@ import '@fontsource/nunito/latin-700.css';
 import '@fontsource/nunito/latin-800.css';
 import { RENDER_HEIGHT, RENDER_WIDTH, planRelayout } from './layout';
 import { BUILD_LABEL } from './version';
+// Listen for Chrome's install offer from the start; it can come before the menu exists.
+import './ui/install';
 import BootScene from './scenes/BootScene';
 import MenuScene from './scenes/MenuScene';
 import GameScene from './scenes/GameScene';
