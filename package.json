@@ -2,7 +2,7 @@
   "name": "moopit-bejeweled",
   "private": true,
   "version": "0.3.0",
-  "codename": "puddles",
+  "codename": "thundertwonk",
   "type": "module",
   "description": "GEMFALL — an original Bejeweled-like match-3 game (Phaser 4 + Vite + TypeScript)",
   "scripts": {
