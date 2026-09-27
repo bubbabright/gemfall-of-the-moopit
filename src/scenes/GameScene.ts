@@ -45,6 +45,8 @@ import { sfx } from '../audio/sfx';
 import { haptics } from '../haptics';
 import { Pill, tweenPromise } from '../ui/pill';
 import { wakeLock } from '../wakeLock';
+import { openSettings, settingsOpen } from '../ui/settings';
+import { showCorners, toggleMute as toggleMuteEverywhere } from '../ui/corners';
 import type { Cell, Grid, Move, Pos } from '../core/types';
 import {
   BOARD_AREA_H,
@@ -66,6 +68,15 @@ const comboY = (): number => BOARD_TOP + BOARD_AREA_H / 2;
 const comboNoteY = (): number => comboY() + 54;
 /** Toast line, clear of the combo flourish above it and still over the board. */
 const toastY = (): number => comboY() + 108;
+/**
+ * HUD colours for an AMOLED phone: labels at 7:1+ on the score panel, and values off-white
+ * rather than pure white (softer on a dark room's eyes, and kinder to OLED burn-in).
+ */
+const HUD_LABEL = '#b3aae6';
+const HUD_VALUE = '#f4f1ff';
+/** The burst flash: bright, but a touch off pure white for the same reasons. */
+const FLASH_TINT = 0xf4f1ff;
+
 /** Scale that shows a TEX_SIZE gem texture at the current tile size. */
 const baseScale = (): number => TILE / TEX_SIZE;
 const D = { slots: 1, gems: 5, ring: 8, fx: 12, hud: 20, overlay: 60 };
@@ -147,7 +158,6 @@ export default class GameScene extends Phaser.Scene {
   private toastBubble!: Phaser.GameObjects.Graphics;
   /** Holds bubble + text; this is what the toast tweens move and fade. */
   private toastBox!: Phaser.GameObjects.Container;
-  private mutePill!: Pill;
   private pausePill!: Pill;
   /** Bottom control pills, keyed by role. Exposed so the playtest can audit their layout. */
   readonly hudPills = new Map<string, Pill>();
@@ -197,8 +207,10 @@ export default class GameScene extends Phaser.Scene {
     this.settings = loadSettings();
     this.reduceMotion = this.settings.reducedMotion;
     this.moopit = this.settings.moopit;
-    sfx.muted = this.settings.muted;
+    sfx.configure(this.settings);
     haptics.enabled = this.settings.haptics;
+    // Speaker and gear in the corners, as on the menu; here the gear pauses first.
+    showCorners(() => this.openSettingsPanel());
 
     const saved = this.resumeRequested ? loadSavedRun() : null;
 
@@ -521,18 +533,18 @@ export default class GameScene extends Phaser.Scene {
 
     place(
       plaqueHud.scoreLabel,
-      this.add.text(0, 0, 'SCORE', { fontFamily: FONT, fontSize: '15px', color: '#8e8ac4' }),
+      this.add.text(0, 0, 'SCORE', { fontFamily: FONT, fontSize: '22px', fontStyle: 'bold', color: HUD_LABEL }),
     ).setLetterSpacing(3);
 
     this.scoreText = place(
       plaqueHud.score,
-      this.add.text(0, 0, '0', { fontFamily: FONT, fontSize: '44px', fontStyle: 'bold', color: '#ffffff' }),
+      this.add.text(0, 0, '0', { fontFamily: FONT, fontSize: '44px', fontStyle: 'bold', color: HUD_VALUE }),
     );
     this.scoreText.setShadow(0, 3, 'rgba(10,4,32,0.7)', 8, true, true);
 
     this.statLabel = place(
       plaqueHud.statLabel,
-      this.add.text(0, 0, 'STAT', { fontFamily: FONT, fontSize: '15px', color: '#8e8ac4' }),
+      this.add.text(0, 0, 'STAT', { fontFamily: FONT, fontSize: '22px', fontStyle: 'bold', color: HUD_LABEL }),
     ).setLetterSpacing(3);
 
     this.statText = place(
@@ -542,12 +554,12 @@ export default class GameScene extends Phaser.Scene {
 
     this.levelText = place(
       plaqueHud.level,
-      this.add.text(0, 0, 'LEVEL 1', { fontFamily: FONT, fontSize: '15px', color: '#a7f3d0' }),
+      this.add.text(0, 0, 'LEVEL 1', { fontFamily: FONT, fontSize: '22px', fontStyle: 'bold', color: '#a7f3d0' }),
     ).setLetterSpacing(2);
 
     this.targetText = place(
       plaqueHud.target,
-      this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '15px', color: '#8e8ac4' }),
+      this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '22px', color: HUD_LABEL }),
     );
 
     this.progress = this.add.graphics().setDepth(D.hud);
@@ -627,7 +639,7 @@ export default class GameScene extends Phaser.Scene {
     // Controls: a row along the bottom in portrait, a column right of the board in landscape.
     // Positions come from src/layout.ts, which spaces them so they cannot overlap.
     const controls = LAYOUT.controls;
-    const [hintAt, pauseAt, soundAt, menuAt] = controls.centres;
+    const [hintAt, pauseAt, menuAt] = controls.centres;
     const w = controls.w;
 
     const hud = (name: string, x: number, pill: Pill): void => {
@@ -658,18 +670,6 @@ export default class GameScene extends Phaser.Scene {
       onClick: () => this.togglePause(),
     });
     hud('pause', this.pausePill.x, this.pausePill);
-    this.mutePill = new Pill(this, {
-      x: soundAt.x,
-      y: soundAt.y,
-      w,
-      h: controls.h,
-      label: this.settings.muted ? 'MUTED' : 'SOUND',
-      variant: 'ghost',
-      fontSize: controls.font,
-      radius: 16,
-      onClick: () => this.toggleMute(),
-    });
-    hud('sound', this.mutePill.x, this.mutePill);
     const menuPill = new Pill(this, {
       x: menuAt.x,
       y: menuAt.y,
@@ -1278,7 +1278,7 @@ export default class GameScene extends Phaser.Scene {
           ease: 'Quad.easeIn',
           // tweenPromise owns onComplete, so hook the flash on start instead.
           onStart: () => {
-            sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+            sprite.setTint(FLASH_TINT).setTintMode(Phaser.TintModes.FILL);
             buzz();
           },
         }),
@@ -1596,9 +1596,9 @@ export default class GameScene extends Phaser.Scene {
             onClick: () => this.restart(),
           },
           {
-            label: this.settings.muted ? 'SOUND OFF' : 'SOUND ON',
+            label: 'SETTINGS',
             variant: 'ghost',
-            onClick: () => this.toggleMute(),
+            onClick: () => this.openSettingsPanel(),
           },
         ],
       });
@@ -1795,14 +1795,24 @@ export default class GameScene extends Phaser.Scene {
     this.scene.start('menu');
   }
 
+  /**
+   * The gear: pause, show the settings panel, and on closing pick the new settings up and
+   * carry on if the run wasn't already paused.
+   */
+  private openSettingsPanel(): void {
+    if (this.over || settingsOpen()) return;
+    const wasPaused = this.paused;
+    this.togglePause(true);
+    openSettings(() => {
+      this.settings = loadSettings();
+      sfx.configure(this.settings);
+      haptics.enabled = this.settings.haptics;
+      if (!wasPaused && this.scene.isActive()) this.togglePause(false);
+    });
+  }
+
+  /** The M key: the same mute as the corner speaker. */
   private toggleMute(): void {
-    this.settings.muted = !this.settings.muted;
-    saveSettings(this.settings);
-    sfx.muted = this.settings.muted;
-    this.mutePill.setLabel(this.settings.muted ? 'MUTED' : 'SOUND');
-    if (!this.settings.muted) {
-      sfx.unlock();
-      sfx.click();
-    }
+    this.settings.muted = toggleMuteEverywhere();
   }
 }

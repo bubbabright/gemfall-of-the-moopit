@@ -67,6 +67,13 @@ def bright(c, val: float = 0.6) -> bool:
     return max(c) / 255 >= val
 
 
+def purple_fill(c) -> bool:
+    """The selected chip's violet fill: dark but strongly coloured. Unselected chips are black
+    with light grey-violet text, whose edges are never this saturated."""
+    _, s, v = colorsys.rgb_to_hsv(c[0] / 255, c[1] / 255, c[2] / 255)
+    return 0.18 <= v <= 0.45 and s >= 0.5
+
+
 def count_in(img, dpr: float, box: dict, y0: float, y1: float, test) -> int:
     """Pixels passing `test` in a horizontal band of a page-space box (fractions of its height)."""
     px = img.load()
@@ -123,12 +130,17 @@ def check_menu(d: Path, geo: dict) -> bool:
         return False
     for b in chips:
         text = count_in(img, dpr, b, 0.2, 0.8, bright)
+        fill = count_in(img, dpr, b, 0.15, 0.85, purple_fill)
         state = "selected" if b["selected"] else "not selected"
-        print(f"difficulty {b['name']:6} {state:13} bright text px={text:4}")
-        if b["selected"] and text < 20:
-            print(f"  FAIL: the selected '{b['name']}' chip isn't lit")
+        print(f"difficulty {b['name']:6} {state:13} text px={text:4} fill px={fill:5}")
+        # Every chip's text must show (they're all readable now, not just the selected one).
+        if text < 20:
+            print(f"  FAIL: the '{b['name']}' chip's label doesn't show")
             ok = False
-        if not b["selected"] and text >= 20:
+        if b["selected"] and fill < 200:
+            print(f"  FAIL: the selected '{b['name']}' chip isn't filled")
+            ok = False
+        if not b["selected"] and fill >= 200:
             print(f"  FAIL: the '{b['name']}' chip looks selected but isn't")
             ok = False
 

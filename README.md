@@ -49,7 +49,7 @@ matches rarer. Every mode and difficulty keeps its own high score.
 | Arrow keys, then Enter | Move around the board and swap |
 | `H` or Space | Hint |
 | `P` or Esc | Pause |
-| `M` | Sound on/off |
+| `M` | Mute everything (same as the speaker, top left) |
 | `R` | Restart |
 
 ## Good to know
@@ -57,12 +57,15 @@ matches rarer. Every mode and difficulty keeps its own high score.
 - **Your scores stay on your device.** High scores and your unfinished game are saved in your
   browser. Nothing gets sent anywhere. Clearing your browser data wipes them.
 - **The game pauses itself** when you switch apps or tabs. Tap **RESUME** to carry on.
+- **Two buttons in the top corners**, on the menu and in a game. The **speaker** (top left)
+  mutes everything in one tap; a red slash means it's muted. The **gear** (top right) opens
+  settings: sound effects and music each on or off, phone buzz, a test buzz, and how long
+  messages stay on screen. Opening settings in a game pauses it.
 - **Phone buzz** only works in **Chrome on Android** (and browsers built on it, like Samsung
-  Internet). iPhones and Firefox can't do it. Turn it on or off with **BUZZ** on the menu.
-  Hold **HOLD TO TEST** to check your phone. The line at the bottom of the menu shows what the
-  browser said.
-- **Sound** is made by the game as you play (there are no audio files). The **SOUND** button
-  turns it off.
+  Internet). iPhones and Firefox can't do it. In settings, hold **Test buzz** to check your
+  phone; the line under it shows what the browser said.
+- **Sound and music** are made by the game as you play (there are no audio files). The music
+  stops while the game is in the background.
 
 ## Put it on your home screen
 
@@ -78,7 +81,7 @@ When there's a new version, it shows up the next time you open the game with a c
 ## Known issues
 
 - **Phone buzz isn't working yet** on some Android phones, even in Chrome. I'm looking into it.
-  If yours buzzes during **HOLD TO TEST** but not when gems explode, please tell me.
+  If yours buzzes during **Test buzz** (in settings) but not when gems explode, please tell me.
 
 ## Found a bug?
 

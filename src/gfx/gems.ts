@@ -245,6 +245,7 @@ export const gemTextureKey = (type: number, special: Special): string => {
 export function generateUtilityTextures(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
 
+
   // Empty board slot.
   g.clear();
   g.fillStyle(0x0a0820, 0.55);

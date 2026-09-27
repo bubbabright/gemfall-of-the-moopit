@@ -14,15 +14,134 @@ interface ToneOptions {
   detune?: number;
 }
 
+/**
+ * Background music, made in code like the effects: a slow four-chord loop (Am9, Fmaj7, Cmaj7,
+ * G6) with a soft pad, a low root and a quiet plucked arpeggio. Original, no samples.
+ * Each chord is [bass, pad notes…] in Hz.
+ */
+const CHORDS: number[][] = [
+  [110.0, 220.0, 261.63, 329.63, 493.88], // Am9
+  [87.31, 174.61, 220.0, 261.63, 329.63], // Fmaj7
+  [130.81, 196.0, 246.94, 329.63, 392.0], // Cmaj7
+  [98.0, 196.0, 246.94, 293.66, 329.63], // G6
+];
+/** Which pad note each eighth of a bar plucks, an octave up. */
+const ARP = [0, 2, 1, 3, 2, 1, 3, 2];
+const EIGHTH = 60 / 84 / 2; // 84 bpm
+const BAR = EIGHTH * 8;
+
 class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private musicBus: GainNode | null = null;
+  /** Everything silent (the speaker in the corner). */
   muted = false;
+  /** Sound effects on (a switch in settings). */
+  effects = true;
+  /** Background music on (a switch in settings). */
+  music = true;
+  private musicTimer = 0;
+  private nextEighth = 0;
+  private eighthIndex = 0;
 
   /** Must be called from a user gesture before any sound can play. */
   unlock(): void {
     const ctx = this.ensure();
-    if (ctx && ctx.state === 'suspended') void ctx.resume();
+    if (ctx && ctx.state === 'suspended') void ctx.resume().then(() => this.syncMusic());
+    else this.syncMusic();
+  }
+
+  /** Apply the sound settings: the corner mute plus the effects and music switches. */
+  configure(settings: { muted: boolean; effects: boolean; music: boolean }): void {
+    this.muted = settings.muted;
+    this.effects = settings.effects;
+    this.music = settings.music;
+    this.syncMusic();
+  }
+
+  // ── Music ───────────────────────────────────────────────────────────────────
+
+  /** Start or stop the loop to match the settings, whether the page is visible, and audio. */
+  syncMusic(): void {
+    const want = this.music && !this.muted && typeof document !== 'undefined' && !document.hidden;
+    const ctx = this.ctx;
+    if (!want || !ctx || ctx.state !== 'running') {
+      this.stopMusic();
+      return;
+    }
+    if (this.musicTimer) return;
+    if (!this.musicBus) {
+      this.musicBus = ctx.createGain();
+      this.musicBus.connect(ctx.destination);
+    }
+    // Fade in rather than start at full level mid-phrase.
+    this.musicBus.gain.cancelScheduledValues(ctx.currentTime);
+    this.musicBus.gain.setValueAtTime(0.0001, ctx.currentTime);
+    this.musicBus.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 1.5);
+    this.nextEighth = ctx.currentTime + 0.1;
+    this.musicTimer = window.setInterval(() => this.scheduleMusic(), 120);
+    this.scheduleMusic();
+  }
+
+  private stopMusic(): void {
+    if (!this.musicTimer) return;
+    window.clearInterval(this.musicTimer);
+    this.musicTimer = 0;
+    const ctx = this.ctx;
+    if (ctx && this.musicBus) {
+      this.musicBus.gain.cancelScheduledValues(ctx.currentTime);
+      this.musicBus.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.15);
+    }
+  }
+
+  /** Book the next half-second of notes ahead of time, so timer jitter never shows. */
+  private scheduleMusic(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.musicBus) return;
+    while (this.nextEighth < ctx.currentTime + 0.5) {
+      const at = this.nextEighth;
+      const step = this.eighthIndex % 8;
+      const chord = CHORDS[Math.floor(this.eighthIndex / 8) % CHORDS.length];
+      if (step === 0) {
+        chord.slice(1).forEach((freq, i) => this.voice(freq, at, BAR * 1.05, 'sine', 0.05, 900, i * 4 - 6));
+        this.voice(chord[0], at, BAR * 0.9, 'sine', 0.12, 400);
+      }
+      this.voice(chord[1 + ARP[step]] * 2, at, EIGHTH * 2.2, 'triangle', 0.035, 2400, 0, true);
+      this.nextEighth += EIGHTH;
+      this.eighthIndex += 1;
+    }
+  }
+
+  private voice(
+    freq: number,
+    at: number,
+    dur: number,
+    type: OscillatorType,
+    peak: number,
+    cutoff: number,
+    detune = 0,
+    pluck = false,
+  ): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.musicBus) return;
+    const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const env = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    osc.detune.value = detune;
+    filter.type = 'lowpass';
+    filter.frequency.value = cutoff;
+    // Pads swell in and out; plucks strike and decay.
+    const attack = pluck ? 0.01 : Math.min(0.9, dur * 0.3);
+    env.gain.setValueAtTime(0.0001, at);
+    env.gain.exponentialRampToValueAtTime(peak, at + attack);
+    env.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    osc.connect(filter);
+    filter.connect(env);
+    env.connect(this.musicBus);
+    osc.start(at);
+    osc.stop(at + dur + 0.05);
   }
 
   private ensure(): AudioContext | null {
@@ -43,7 +162,7 @@ class Sfx {
   }
 
   private tone(opts: ToneOptions): void {
-    if (this.muted) return;
+    if (this.muted || !this.effects) return;
     const ctx = this.ensure();
     if (!ctx || !this.master) return;
 
@@ -69,7 +188,7 @@ class Sfx {
   }
 
   private noise(dur: number, gain: number, filterFrom: number, filterTo: number, delay = 0): void {
-    if (this.muted) return;
+    if (this.muted || !this.effects) return;
     const ctx = this.ensure();
     if (!ctx || !this.master) return;
 
@@ -175,3 +294,8 @@ class Sfx {
 }
 
 export const sfx = new Sfx();
+
+// No music while the game is in the background (saves battery, and it's polite).
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => sfx.syncMusic());
+}

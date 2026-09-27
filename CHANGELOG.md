@@ -5,8 +5,15 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 ## Not live yet
 
 - New opening screen: the colorful GEMFALL logo with gems raining behind it. After a moment
-  it fades into the menu, which now wears the same logo. The mode buttons each have their own
-  gem and colour, and the big button says **PLAY NOW**.
+  the logo slides up and the menu appears under it: a card with its own gem for each mode,
+  small buttons for the difficulty, and a big **PLAY NOW**. The gems keep falling behind.
+- Two buttons in the top corners, on the menu and in a game. The **speaker** mutes everything
+  (a red slash shows it's muted). The **gear** opens settings: sound effects and music, each on
+  or off, phone buzz and a test buzz, and how long messages stay up.
+- New: quiet background music, made by the game like the sound effects. Turn it off in
+  settings.
+- Made for phone screens that show true black: darker backgrounds, no haze, and every bit of
+  text bigger and easier to read.
 - You can add GEMFALL to your phone's home screen. It gets its own gem icon, opens full screen
   without the browser bar, and works with no signal once you've played it. The screen stays on
   while you play. How-to is in the
@@ -80,3 +87,7 @@ Don't bring these back without a good reason.
 | 18 ms match buzz, 1 ms `haptics.unlock()` | Too short for any phone motor to feel | `MIN_ON_MS` (40 ms) floor; `haptics.confirm()` (50 ms) |
 | Two buzz calls per cascade step (match + detonation) | The second call was always dropped | One `haptics.explosion(depth, heavy)` per step |
 | Sizing `#game` by its content | The canvas inflated its own parent, so the board never scaled down | `#game` pinned to the viewport |
+| The Phaser-drawn menu (`MenuScene` buttons, the plain GEMFALL title) | Couldn't match the splash design, or grow out of the splash | The HTML front screen, `src/ui/front.ts` |
+| MSG, HOLD TO TEST, BUZZ and SOUND on the menu; SOUND in the game's button row | Too many buttons on both screens (issue #3) | The speaker and gear in the top corners, `src/ui/corners.ts` and `src/ui/settings.ts` |
+| The keyboard hint lines under the menu | Not in the splash design | The keys still work; README lists them |
+| The violet page gradient, the aurora glow and blurred gem glows | Read as muddy haze on an AMOLED phone | True black with one soft glow (see DEVELOPING, "Readability on the phone") |

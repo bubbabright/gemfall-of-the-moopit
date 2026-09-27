@@ -10,7 +10,12 @@ import { deserializeGrid, serializeGrid } from './board';
 import type { Grid, SerializedGrid } from './types';
 
 export interface Settings {
+  /** Everything silent: the speaker in the corner. */
   muted: boolean;
+  /** Sound effects on, in settings. */
+  effects: boolean;
+  /** Background music on, in settings. */
+  music: boolean;
   reducedMotion: boolean;
   /** Vibration on match explosions, where the platform supports it. */
   haptics: boolean;
@@ -19,7 +24,7 @@ export interface Settings {
    * `MOOPIT_TAPS` times. Stored rather than session-only so it survives a reload.
    */
   moopit: boolean;
-  /** How long messages stay on screen, one of `MESSAGE_HOLD_STEPS_MS` (the menu's MSG pill). */
+  /** How long messages stay on screen, one of `MESSAGE_HOLD_STEPS_MS` (in settings). */
   messageHoldMs: number;
 }
 
@@ -57,6 +62,8 @@ export function systemPrefersReducedMotion(): boolean {
 
 export const defaultSettings = (): Settings => ({
   muted: false,
+  effects: true,
+  music: true,
   reducedMotion: systemPrefersReducedMotion(),
   haptics: true,
   moopit: false,
@@ -89,6 +96,8 @@ export function loadSettings(): Settings {
   if (!stored || typeof stored !== 'object') return base;
   return {
     muted: typeof stored.muted === 'boolean' ? stored.muted : base.muted,
+    effects: typeof stored.effects === 'boolean' ? stored.effects : base.effects,
+    music: typeof stored.music === 'boolean' ? stored.music : base.music,
     reducedMotion:
       typeof stored.reducedMotion === 'boolean' ? stored.reducedMotion : base.reducedMotion,
     haptics: typeof stored.haptics === 'boolean' ? stored.haptics : base.haptics,

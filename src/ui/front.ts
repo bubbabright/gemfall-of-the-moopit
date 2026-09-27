@@ -1,7 +1,6 @@
 import {
   DIFFICULTIES,
   DIFFICULTY_ORDER,
-  MESSAGE_HOLD_STEPS_MS,
   MODES,
   MODE_ORDER,
   type Difficulty,
@@ -12,6 +11,8 @@ import { MOOPIT_TAPS, MOOPIT_TAP_WINDOW_MS, voiceFor } from '../messages';
 import { BUILD_LABEL } from '../version';
 import { haptics } from '../haptics';
 import { sfx } from '../audio/sfx';
+import { openSettings } from './settings';
+import { showCorners } from './corners';
 
 /**
  * The front screen: the boot splash, then the menu, as one HTML page over the game canvas
@@ -33,10 +34,14 @@ export interface RunChoice {
 }
 
 /** Each mode card's gem and colour, from the splash design. */
-const MODE_LOOK: Record<Mode, { shape: string; top: string; base: string; color: string; desc: string }> = {
-  endless: { shape: 'kite', top: '#cc77ff', base: '#9911ff', color: '#9922ff', desc: 'Chase the high score' },
-  timed: { shape: 'octagon', top: '#ffcc44', base: '#ffaa00', color: '#ffaa00', desc: MODES.timed.sub },
-  moves: { shape: 'hex', top: '#5599ff', base: '#1155ff', color: '#1155ff', desc: MODES.moves.sub },
+/**
+ * Each mode card's gem and colour, from the splash design. `label` is the lighter tint its
+ * name takes when selected: at least 4.5:1 on black, where the gem colour itself may not be.
+ */
+const MODE_LOOK: Record<Mode, { shape: string; top: string; base: string; color: string; label: string; desc: string }> = {
+  endless: { shape: 'kite', top: '#cc77ff', base: '#9911ff', color: '#9922ff', label: '#c48bff', desc: 'Chase the high score' },
+  timed: { shape: 'octagon', top: '#ffcc44', base: '#ffaa00', color: '#ffaa00', label: '#ffc95c', desc: MODES.timed.sub },
+  moves: { shape: 'hex', top: '#5599ff', base: '#1155ff', color: '#1155ff', label: '#7fa2ff', desc: MODES.moves.sub },
 };
 
 const FADE_MS = 400;
@@ -58,10 +63,6 @@ const els = {} as {
   play: HTMLButtonElement;
   resumeSlot: HTMLElement;
   best: HTMLElement;
-  msg: HTMLButtonElement;
-  buzz: HTMLButtonElement;
-  sound: HTMLButtonElement;
-  buzzStatus: HTMLElement;
   tag: HTMLElement;
 };
 
@@ -109,6 +110,7 @@ function build(ui: HTMLElement): void {
     );
     card.dataset.mode = m;
     card.style.setProperty('--c', look.color);
+    card.style.setProperty('--l', look.label);
     els.modes.set(m, card);
     modes.append(card);
   }
@@ -126,26 +128,7 @@ function build(ui: HTMLElement): void {
   els.resumeSlot = el('div', 'resume-slot');
   els.best = el('p', 'best');
 
-  els.msg = button('chip', [], cycleMessageHold);
-  els.buzz = button('chip', [], toggleHaptics);
-  els.sound = button('chip', [], toggleMute);
-  const test = el('button', 'chip', ['Hold to test']);
-  test.type = 'button';
-  wireBuzzTest(test);
-  const settings = el('div', 'chips settings', [els.msg, test, els.buzz, els.sound]);
-  els.buzzStatus = el('p', 'buzz-status');
-
-  const parts = [
-    el('div', 'divider'),
-    modes,
-    chips,
-    els.play,
-    els.resumeSlot,
-    els.best,
-    settings,
-    el('p', 'foot', [BUILD_LABEL]),
-    els.buzzStatus,
-  ];
+  const parts = [el('div', 'divider'), modes, chips, els.play, els.resumeSlot, els.best, el('p', 'foot', [BUILD_LABEL])];
   // Stagger for the fade-in (see .ui > * in index.html).
   parts.forEach((part, i) => part.style.setProperty('--n', String(i)));
   ui.append(...parts);
@@ -177,12 +160,9 @@ function select(m: Mode, d: Difficulty): void {
 
 function refresh(): void {
   const settings = loadSettings();
-  sfx.muted = settings.muted;
+  sfx.configure(settings);
   haptics.enabled = settings.haptics;
   moopit = settings.moopit;
-  els.msg.textContent = `MSG ${settings.messageHoldMs / 1000}s`;
-  els.buzz.textContent = settings.haptics ? 'Buzz on' : 'Buzz off';
-  els.sound.textContent = settings.muted ? 'Sound off' : 'Sound on';
   showTagline();
 
   els.resumeSlot.replaceChildren();
@@ -236,6 +216,8 @@ function show(startRun: (run: RunChoice) => void): void {
 
   front.classList.remove('splash', 'slow', 'hidden', 'settled');
   front.classList.add('menu');
+  // Speaker top left, gear (settings) top right; see src/ui/corners.ts.
+  showCorners(() => openSettings(refresh));
 
   if (fromSplash && wrap && !loadSettings().reducedMotion) {
     // FLIP: start the logo where the splash had it, then let it glide to its menu spot.
@@ -305,62 +287,6 @@ function setMoopit(on: boolean): void {
     void (flash as HTMLElement | undefined)?.offsetWidth;
     flash?.classList.add('on');
   }
-}
-
-// ── Settings ──────────────────────────────────────────────────────────────────
-
-function toggleMute(): void {
-  const settings = loadSettings();
-  settings.muted = !settings.muted;
-  saveSettings(settings);
-  sfx.muted = settings.muted;
-  els.sound.textContent = settings.muted ? 'Sound off' : 'Sound on';
-}
-
-function toggleHaptics(): void {
-  const settings = loadSettings();
-  settings.haptics = !settings.haptics;
-  saveSettings(settings);
-  haptics.enabled = settings.haptics;
-  els.buzz.textContent = settings.haptics ? 'Buzz on' : 'Buzz off';
-  // Fire one so the toggle demonstrates itself.
-  if (settings.haptics) haptics.confirm();
-}
-
-function cycleMessageHold(): void {
-  const settings = loadSettings();
-  const steps: readonly number[] = MESSAGE_HOLD_STEPS_MS;
-  // loadSettings guarantees a listed step, so indexOf is never -1 here.
-  settings.messageHoldMs = steps[(steps.indexOf(settings.messageHoldMs) + 1) % steps.length];
-  saveSettings(settings);
-  els.msg.textContent = `MSG ${settings.messageHoldMs / 1000}s`;
-}
-
-/**
- * Hold to test vibration: while held, 200 ms pulses back to back so the motor runs
- * continuously; letting go (or sliding off) stops it. The line under the version shows what
- * the browser answered, so a silent phone can be diagnosed without devtools.
- */
-function wireBuzzTest(test: HTMLButtonElement): void {
-  const pulseMs = 200;
-  let timer = 0;
-  const stop = (): void => {
-    if (!timer) return;
-    window.clearInterval(timer);
-    timer = 0;
-    haptics.test(0);
-  };
-  const pulse = (): void => {
-    els.buzzStatus.textContent = haptics.test(pulseMs);
-  };
-  test.addEventListener('pointerdown', () => {
-    stop();
-    sfx.unlock();
-    pulse();
-    timer = window.setInterval(pulse, pulseMs - 20);
-  });
-  for (const type of ['pointerup', 'pointerleave', 'pointercancel'] as const) test.addEventListener(type, stop);
-  window.addEventListener('blur', stop);
 }
 
 export const front = { show, hide };

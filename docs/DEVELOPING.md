@@ -67,12 +67,13 @@ src/
                      (see "Wording and the private voice" below)
   core/              Phaser-free engine: board, specials, score, storage, types
   core/selftest.ts   engine test suite (dev only)
-  scenes/            BootScene (texture generation), MenuScene, GameScene
-  ui/pill.ts         the rounded button used everywhere (read the hit-area note in it)
+  scenes/            BootScene (texture generation), MenuScene (shows the HTML menu), GameScene
+  ui/front.ts        the front screen: splash, then the HTML menu (see "Opening screen")
+  ui/corners.ts      the corner buttons on both screens: speaker (mute) and gear (settings)
+  ui/settings.ts     the settings panel behind the gear
+  ui/pill.ts         the rounded in-game button (read the hit-area note in it)
   gfx/gems.ts        procedural gem and power-gem textures
-  audio/sfx.ts       procedural WebAudio sound effects
-  gfx/logo.ts        the lettered-gem GEMFALL logo for the menu (shapes, colours, fonts); the
-                     boot splash in index.html draws the same logo in CSS, so keep them in step
+  audio/sfx.ts       procedural WebAudio sound effects and background music
 public/
   manifest.webmanifest   name, colours and icons for "Add to Home screen"
   icons/             home-screen icons, drawn by tools/make-icons.py
@@ -86,7 +87,9 @@ tools/
   poc.sh             build and serve on the LAN (the dev preview, :4771)
   gates.sh           npm run gates: fresh build + preview, then all six gates, one verdict
   ship.sh            npm run ship: gates, push, wait until live, stop dev servers
-  probe-*.mjs        one-off diagnostics kept for reference; not part of any gate
+  probe-*.mjs        one-off diagnostics kept for reference; not part of any gate. The
+                     hittest, sweep, input, pointer and layout probes drove the old Phaser
+                     menu and no longer run against the HTML one
 ```
 
 | I want to… | Go to |
@@ -94,7 +97,8 @@ tools/
 | Tweak scoring, speed, board sizes | `src/config.ts` |
 | Change match / cascade / special-gem rules | `src/core/` (then `npm run selftest`) |
 | Change what's on screen or how it animates | `src/scenes/GameScene.ts` |
-| Change the menu | `src/scenes/MenuScene.ts` |
+| Change the menu or splash | `index.html` (#front styles and markup) and `src/ui/front.ts` |
+| Change a setting | `src/ui/settings.ts`, stored in `src/core/storage.ts` |
 | Change a button's look or hit area | `src/ui/pill.ts` |
 | Change what the game says | `src/messages.ts` |
 
@@ -138,10 +142,15 @@ scoring, and a 40-turn cascade simulation. It does not touch rendering.
 
 **`playtest`** checks what unit tests can't see:
 
-- menu buttons don't overlap, and no sub-label spills out of its button;
-- tapping a button's centre selects *that* button (regression test for a bug where the right
-  half of every button was dead and clicks landed one button over);
-- the HUD row is evenly spaced;
+- the HTML menu's buttons don't overlap, spill their text or run off screen, and tapping a
+  button's centre selects *that* one (a regression test from the Phaser menu, whose right half
+  of every button was dead);
+- every piece of menu and settings text is at least 12 px and reaches 4.5:1 contrast against
+  what is actually behind it (see "Readability on the phone"); in a game, no text is under
+  21 world px;
+- the corner speaker mutes and unmutes (and shows its red slash), the gear opens settings, and
+  the Sound effects and Music switches each change only their own setting;
+- the HUD row is evenly spaced, and MENU brings the menu back with the run's picks;
 - a real run of 10 hint-driven moves: score goes up, the move counter goes down, the board stays
   full with one sprite per gem, and there are no console errors;
 - at least one move spends 600 ms or more animating (matches and falls are meant to be seen);
@@ -151,9 +160,10 @@ scoring, and a 40-turn cascade simulation. It does not touch rendering.
 It writes `poc/menu.png`, `poc/game-start.png`, `poc/game-played.png` and `poc/geometry.json`
 (git-ignored) and prints the build stamp it tested.
 
-**`visual`** reads those screenshots with Pillow and checks what numbers can't: the menu
-really draws three separate buttons lined up with their hit boxes, and the board really shows
-every cell filled with the right number of gem colours.
+**`visual`** reads those screenshots with Pillow and checks what numbers can't: each menu mode
+card really draws its gem, only the selected card's name is lit in its colour, only the
+selected difficulty chip is filled, and the board really shows every cell filled with the right
+number of gem colours.
 
 **`scaling`** loads the game at seven viewports (tall Androids with and without browser bars,
 an iPhone, a small Android, a phone in landscape, a tablet, a short desktop window). At each it
@@ -207,15 +217,45 @@ No iPhone-only tags or icons: the players are on Android.
 If a phone seems stuck on an old build: open the game once with a connection, close it, and
 open it again.
 
-### Opening screen
+### Opening screen and menu
 
-`index.html` shows the splash first: the lettered-gem logo over falling gems, no buttons. It is
-plain CSS plus a tiny inline script, so it paints before the game bundle loads. `BootScene`
-keeps it up for at least `SPLASH_MS` (1.5 s from page load) and until the fonts are ready (capped
-at 2.5 s), then adds `.done`: the splash fades out over 600 ms while the menu starts under it.
-If loading runs past 1.5 s, a quiet "Loading gems…" line appears. The logo faces, Cinzel
-Decorative and Cinzel, are bundled with `@fontsource` like Fredoka; nothing is fetched from a
-font service.
+The front screen is HTML over the canvas (`#front` in `index.html`, driven by
+`src/ui/front.ts`), following the Figma splash design. It opens as the splash: the lettered-gem
+logo over falling gems, no buttons. That part is plain CSS plus a tiny inline script, so it
+paints before the game bundle loads. `BootScene` keeps it up for at least `SPLASH_MS` (1.5 s from
+page load) and until the fonts are ready (capped at 2.5 s), then starts `MenuScene`, which calls
+`front.show()`: the logo glides up from its splash position (a FLIP transition) while the mode
+cards, difficulty chips and PLAY NOW fade in under it. PLAY NOW or RESUME hides the front screen
+and starts the game scene; MENU in a game brings it back. A deep link (`?auto=1…`) skips it.
+If loading runs past 1.5 s, a quiet "Loading gems…" line appears. The faces (Cinzel Decorative,
+Cinzel, Nunito) are bundled with `@fontsource` like Fredoka; nothing is fetched.
+
+The corner buttons (`src/ui/corners.ts`) sit over both the menu and a game: the speaker mutes
+everything (`muted`), and the gear opens `src/ui/settings.ts`. Settings hold `effects` and
+`music` switches, buzz, a test buzz and the message time. In a game the gear pauses first and
+resumes on close if the run wasn't already paused. The score panel is placed below the
+corners when the screen has room (`cornerClear` in `src/layout.ts`).
+
+Music is generated in `src/audio/sfx.ts` like the effects: a slow four-chord loop with a pad, a
+low root and a quiet arpeggio, scheduled half a second ahead. It plays only after the first
+tap (browsers require it), and stops while the page is hidden.
+
+### Readability on the phone
+
+The target phone is a ~409 ppi AMOLED (1080 × 2400, about 411 × 751 CSS px in Chrome). So:
+
+- **True black** behind everything (`--ink`): black pixels are off on AMOLED, and a violet wash
+  over the whole page reads as muddy. One soft glow sits behind the logo, and the falling gems
+  have no blurred glow.
+- **Contrast of at least 4.5:1** for every text colour against what is actually behind it. The
+  tokens (`--text-hi`, `--text`, `--text-dim`, `--text-faint`) all pass on black and on the
+  darkest cards; saturated gem colours get a lighter tint when used for text.
+- **Nothing under 12 CSS px.** In a game that means at least 21 world px, because a phone
+  shrinks the 720-wide world to about 57%.
+- **No pure white for lasting text or the burst flash** (`#f4f1ff` instead): softer in a dark
+  room and kinder to OLED burn-in.
+
+The playtest measures the size and contrast rules on every run.
 
 ### Screen layout
 
@@ -256,11 +296,12 @@ waits until the player leaves.
 Every player-facing line the game says lives in [`src/messages.ts`](../src/messages.ts), in
 two voices:
 
-- **`plain`** — the default. Byte-for-byte the wording the game has always used, and the
-  screenshots and playtest are checked against this build, so don't change it casually.
+- **`plain`** — the default. The screenshots and playtest are checked against this build, so
+  don't change it casually. (The menu tagline became "Match · Chain · Explode" with the splash
+  design.)
 - **`moopit`** — a private pack of in-jokes. Off unless a player unlocks it.
 
-**Unlocking it:** tap the title on the menu `MOOPIT_TAPS` (7) times, with no more than
+**Unlocking it:** tap the logo on the menu `MOOPIT_TAPS` (7) times, with no more than
 `MOOPIT_TAP_WINDOW_MS` between taps. The line under the title changes to `the full moopit` and
 the personal lines turn indigo. The title *art* never changes — only the line beneath it does.
 The choice is stored as `moopit` in `bejeweled.settings.v1`, so it survives a reload, and
@@ -302,7 +343,7 @@ The match explosion vibrates the phone through `navigator.vibrate`, in
   spin up. 40 is a guess, not a measured floor.
 - **Refusals are logged.** If `vibrate()` returns `false` (no tap yet, cross-origin iframe), the
   console logs `haptics: navigator.vibrate() was refused by the browser` once.
-- **HOLD TO TEST** on the menu calls `haptics.test()`. It bypasses the BUZZ setting and prints
+- **Test buzz** in settings calls `haptics.test()`. It bypasses the BUZZ setting and prints
   what the browser answered, so players can check their own phones without devtools.
 
 Browser support: Chrome-based Android browsers only. iOS Safari and desktop browsers have no

@@ -85,7 +85,9 @@ export const BOARD_PAD = 14;
 /** Space kept clear between the board area and the controls. */
 const BAND_GAP = 29;
 /** Header plaque plus the gap under it, measured from the plaque's top edge. */
-const HUD_H = 170;
+const HUD_H = 178;
+/** Buttons in the game's control row: HINT, PAUSE, MENU. */
+const CONTROL_COUNT = 3;
 
 /** The screen's shape, from the box the game is drawn into. */
 export function measureParent(): { w: number; h: number } {
@@ -117,9 +119,10 @@ function portraitLayout(pw: number, ph: number): Layout {
   // Bottom control row: taller buttons once there's room, anchored to the bottom edge.
   const controlH = extra >= 200 ? 72 : 58;
   const controlsY = height - 33 - controlH / 2;
-  const controlW = 148;
+  // Three buttons (HINT, PAUSE, MENU); sound and settings are the corner buttons (src/ui/corners.ts).
+  const controlW = 196;
   const gap = 14;
-  const startX = (width - (controlW * 4 + gap * 3)) / 2 + controlW / 2;
+  const startX = (width - (controlW * CONTROL_COUNT + gap * (CONTROL_COUNT - 1))) / 2 + controlW / 2;
 
   // Gem size: 72 on the original shape, growing with a tall screen, capped so an 8-wide board
   // plus its frame still clears both sides of the 720 width.
@@ -131,10 +134,13 @@ function portraitLayout(pw: number, ph: number): Layout {
   // Leftover height once the bigger board fits. A share of it drops the HUD and board down,
   // so on a tall phone they sit nearer the middle instead of hugging the top.
   const leftover = Math.max(0, areaBeforeShift - (BOARD_MAX_COLS * tile + 2 * BOARD_PAD));
-  const hudTop = 26 + Math.round(leftover * 0.3);
+  // Keep the score panel below the corner buttons (48 CSS px, 14 from the top, plus a gap)
+  // when there's room: in world px that depends on how far the screen shrinks the world.
+  const cssWidth = Math.min(pw, (ph * width) / height);
+  const cornerClear = Math.ceil((72 * width) / cssWidth) - 26;
+  const hudTop = 26 + Math.min(leftover, Math.max(Math.round(leftover * 0.3), cornerClear));
   const boardTop = hudTop + HUD_H;
 
-  const cssWidth = Math.min(pw, (ph * width) / height);
   return {
     orientation: 'portrait',
     width,
@@ -144,20 +150,22 @@ function portraitLayout(pw: number, ph: number): Layout {
     boardTop,
     boardAreaH: controlsY - controlH / 2 - BAND_GAP - boardTop,
     hud: {
-      plaque: { x: 40, y: hudTop, w: width - 80, h: 132 },
-      scoreLabel: { x: 58, y: hudTop + 16, originX: 0 },
-      score: { x: 58, y: hudTop + 36, originX: 0 },
-      statLabel: { x: width - 58, y: hudTop + 16, originX: 1 },
-      stat: { x: width - 58, y: hudTop + 36, originX: 1 },
-      level: { x: 58, y: hudTop + 100, originX: 0 },
-      target: { x: width - 58, y: hudTop + 100, originX: 1 },
-      bar: { x: 58, y: hudTop + 124, w: width - 116 },
+      // Labels are 22 world px (12+ CSS px on a phone), so the rows are spaced for that.
+      plaque: { x: 40, y: hudTop, w: width - 80, h: 140 },
+      scoreLabel: { x: 58, y: hudTop + 12, originX: 0 },
+      score: { x: 58, y: hudTop + 38, originX: 0 },
+      statLabel: { x: width - 58, y: hudTop + 12, originX: 1 },
+      stat: { x: width - 58, y: hudTop + 38, originX: 1 },
+      level: { x: 58, y: hudTop + 96, originX: 0 },
+      target: { x: width - 58, y: hudTop + 96, originX: 1 },
+      bar: { x: 58, y: hudTop + 128, w: width - 116 },
     },
     controls: {
-      centres: [0, 1, 2, 3].map((i) => ({ x: startX + i * (controlW + gap), y: controlsY })),
+      centres: [0, 1, 2].map((i) => ({ x: startX + i * (controlW + gap), y: controlsY })),
       w: controlW,
       h: controlH,
-      font: extra >= 200 ? 22 : 19,
+      // At least 21 world px: 12 CSS px once a phone shrinks the 720-wide world to ~411.
+      font: extra >= 200 ? 26 : 22,
     },
     menuHeight: height,
     menuMidShift: Math.round(extra / 2),
@@ -190,7 +198,7 @@ function landscapeLayout(pw: number, ph: number): Layout {
   // Buttons: four stacked, centred vertically.
   const controlH = 76;
   const gap = 18;
-  const stackH = controlH * 4 + gap * 3;
+  const stackH = controlH * CONTROL_COUNT + gap * (CONTROL_COUNT - 1);
   const controlsTop = (height - stackH) / 2 + controlH / 2;
 
   const cssWidth = Math.min(pw, (ph * width) / height);
@@ -204,16 +212,16 @@ function landscapeLayout(pw: number, ph: number): Layout {
     boardAreaH: height - 2 * margin,
     hud: {
       plaque: { x: leftX, y: py, w: colW, h: plaqueH },
-      scoreLabel: { x: inX, y: py + 20, originX: 0 },
-      score: { x: inX, y: py + 40, originX: 0 },
+      scoreLabel: { x: inX, y: py + 18, originX: 0 },
+      score: { x: inX, y: py + 44, originX: 0 },
       statLabel: { x: inX, y: py + 118, originX: 0 },
-      stat: { x: inX, y: py + 138, originX: 0 },
+      stat: { x: inX, y: py + 144, originX: 0 },
       level: { x: inX, y: py + 228, originX: 0 },
       target: { x: inR, y: py + 228, originX: 1 },
-      bar: { x: inX, y: py + 256, w: colW - 40 },
+      bar: { x: inX, y: py + 262, w: colW - 40 },
     },
     controls: {
-      centres: [0, 1, 2, 3].map((i) => ({ x: rightX + colW / 2, y: controlsTop + i * (controlH + gap) })),
+      centres: [0, 1, 2].map((i) => ({ x: rightX + colW / 2, y: controlsTop + i * (controlH + gap) })),
       w: Math.min(colW, 240),
       h: controlH,
       font: 22,

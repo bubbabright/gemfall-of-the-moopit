@@ -320,7 +320,7 @@ const menuRows = await evaluate(`
       };
     };
     const rows = {};
-    const groups = { mode: '#front .modes .mode', difficulty: '#front .chips.difficulty .chip', settings: '#front .chips.settings .chip' };
+    const groups = { mode: '#front .modes .mode', difficulty: '#front .chips.difficulty .chip' };
     for (const [group, sel] of Object.entries(groups)) {
       const boxes = [...document.querySelectorAll(sel)].map(box);
       const gaps = [];
@@ -351,6 +351,65 @@ for (const [group, row] of Object.entries(menuRows)) {
   });
 }
 
+// ── readability on the phone (AMOLED, ~409 ppi) ──────────────────────────────
+//
+// Every piece of menu text must be at least 12 CSS px and reach 4.5:1 contrast (WCAG AA)
+// against what is really behind it: the element's own and its ancestors' background colours,
+// composited over the page's true black. PLAY NOW's label sits on a gradient, so it is judged
+// against the gradient's lightest stop instead.
+const readabilityOf = (rootSelector) => evaluate(`
+  (() => {
+    const parse = (c) => {
+      const m = c.match(/rgba?\\(([^)]+)\\)/);
+      if (!m) return null;
+      const [r, g, b, a = 1] = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+      return { r, g, b, a };
+    };
+    const over = (top, under) => ({
+      r: top.r * top.a + under.r * (1 - top.a),
+      g: top.g * top.a + under.g * (1 - top.a),
+      b: top.b * top.a + under.b * (1 - top.a),
+      a: 1,
+    });
+    const lum = ({ r, g, b }) => {
+      const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+    const out = [];
+    const front = document.querySelector('${rootSelector}');
+    const walker = document.createTreeWalker(front, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent.trim();
+      const el = node.parentElement;
+      if (!text || !el || !el.getClientRects().length) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+      // Background: stack the ancestors' colours over black, innermost last.
+      const chain = [];
+      for (let e = el; e && e !== front.parentElement; e = e.parentElement) chain.push(e);
+      let bg = { r: 0, g: 0, b: 0, a: 1 };
+      for (const e of chain.reverse()) {
+        const c = parse(getComputedStyle(e).backgroundColor);
+        if (c && c.a > 0) bg = over(c, bg);
+      }
+      if (el.closest('.play')) bg = { r: 136, g: 34, b: 255, a: 1 };
+      let fg = parse(cs.color);
+      let opacity = 1;
+      for (let e = el; e && e !== front.parentElement; e = e.parentElement) opacity *= Number(getComputedStyle(e).opacity);
+      fg = over({ ...fg, a: fg.a * opacity }, bg);
+      out.push({ text: text.slice(0, 28), px: parseFloat(cs.fontSize), contrast: +ratio(fg, bg).toFixed(2) });
+    }
+    return out;
+  })()
+`);
+const readability = await readabilityOf('#front');
+const unreadable = readability.filter((t) => t.px < 12 || t.contrast < 4.5);
+console.log(`menu text: ${readability.length} pieces, smallest ${Math.min(...readability.map((t) => t.px))}px, lowest contrast ${Math.min(...readability.map((t) => t.contrast))}:1`);
+for (const t of unreadable) {
+  problems.push(`menu text '${t.text}' is hard to read on a phone (${t.px}px, ${t.contrast}:1; needs >= 12px and >= 4.5:1)`);
+}
+
 /** Tap a page point (CSS px) with the mouse. */
 const tapPage = async (x, y) => {
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', clickCount: 0 });
@@ -358,6 +417,65 @@ const tapPage = async (x, y) => {
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
   await sleep(60);
 };
+
+/** Tap the centre of an element found by selector; false if it isn't on screen. */
+const tapSelector = async (selector) => {
+  const at = await evaluate(`
+    (() => {
+      const e = document.querySelector(${JSON.stringify(selector)});
+      if (!e || !e.getClientRects().length) return null;
+      const r = e.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    })()
+  `);
+  if (!at) return false;
+  await tapPage(at.x, at.y);
+  return true;
+};
+const storedSettings = () => evaluate(`JSON.parse(localStorage.getItem('bejeweled.settings.v1') || '{}')`);
+
+// ── corner buttons: speaker (mute) and gear (settings) ───────────────────────
+
+if (!(await tapSelector('#corners .speaker'))) problems.push('corner speaker not on the menu');
+const mutedOnce = await storedSettings();
+const slashShown = await evaluate(`getComputedStyle(document.querySelector('#corners .speaker .slash')).display !== 'none'`);
+console.log(`speaker tapped: muted=${mutedOnce.muted} slash=${slashShown}`);
+if (mutedOnce.muted !== true || !slashShown) problems.push('the speaker did not mute (or show its red slash)');
+await tapSelector('#corners .speaker');
+if ((await storedSettings()).muted !== false) problems.push('the speaker did not unmute');
+
+if (!(await tapSelector('#corners .gear'))) problems.push('corner gear not on the menu');
+await sleep(400); // the sheet slides up for 260 ms; tap once it has landed
+const sheetOpen = await evaluate(`!!document.querySelector('#settings:not([hidden])')`);
+if (!sheetOpen) {
+  problems.push('the gear did not open settings');
+} else {
+  const names = await evaluate(`[...document.querySelectorAll('#settings .name')].map((n) => n.textContent)`);
+  console.log('settings rows:', JSON.stringify(names));
+  for (const want of ['Sound effects', 'Music']) {
+    if (!names.includes(want)) problems.push(`settings has no '${want}' switch`);
+  }
+  // Each switch flips its own setting and nothing else.
+  const switches = await evaluate(`[...document.querySelectorAll('#settings .switch')].length`);
+  if (switches >= 2) {
+    await tapSelector('#settings .row:nth-of-type(1) .switch');
+    const afterEffects = await storedSettings();
+    await tapSelector('#settings .row:nth-of-type(2) .switch');
+    const afterMusic = await storedSettings();
+    console.log(`effects switch -> effects=${afterEffects.effects} music=${afterEffects.music}; music switch -> music=${afterMusic.music}`);
+    if (afterEffects.effects !== false || afterEffects.music !== true) problems.push('the Sound effects switch changed the wrong setting');
+    if (afterMusic.music !== false) problems.push('the Music switch did not turn music off');
+    // Put them back for the rest of the run.
+    await tapSelector('#settings .row:nth-of-type(1) .switch');
+    await tapSelector('#settings .row:nth-of-type(2) .switch');
+  }
+  const sheetText = await readabilityOf('#settings');
+  for (const t of sheetText.filter((x) => x.px < 12 || x.contrast < 4.5)) {
+    problems.push(`settings text '${t.text}' is hard to read on a phone (${t.px}px, ${t.contrast}:1)`);
+  }
+  await tapSelector('#settings .done');
+  if (await evaluate(`!!document.querySelector('#settings:not([hidden])')`)) problems.push('Done did not close settings');
+}
 
 /** Tap a menu button at the centre of its box and report what got selected. */
 const tapAndRead = async (group, name, read) => {
@@ -403,6 +521,24 @@ console.log('game started:', await sceneState());
 await waitFor(`!!document.querySelector('#front.gone')`, 'the menu to fade away');
 await pump(60);
 await screenshot('game-start');
+
+// In-game text is drawn in the 720-wide game world; on a 411 px-wide phone that world is
+// shrunk to 57%, so anything under 21 world px ends up smaller than 12 CSS px.
+const smallGameText = await evaluate(`
+  (() => {
+    const s = window.gemfall.scene.getScene('game');
+    const texts = [];
+    const visit = (o) => {
+      if (o.type === 'Text' && o.visible && o.text.trim()) texts.push({ text: o.text.trim().slice(0, 24), size: parseFloat(o.style.fontSize) * (o.scaleY || 1) });
+      if (o.list) o.list.forEach(visit);
+    };
+    s.children.list.forEach(visit);
+    return texts.filter((t) => t.size < 21);
+  })()
+`);
+for (const t of smallGameText) {
+  problems.push(`game text '${t.text}' is ${t.size} world px, under 12 px on a phone (needs >= 21)`);
+}
 
 const hudRows = await pillAudit('game');
 if (hudRows.hud) {
