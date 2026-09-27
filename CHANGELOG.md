@@ -4,6 +4,7 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 ## Not live yet
 
+- New loading screen: the colorful GEMFALL logo with gems raining behind it.
 - The version line at the bottom of the menu now also shows the release name and when it was
   built (Eastern time).
 - On a phone held upright, the game now fills the whole screen instead of sitting in a box in

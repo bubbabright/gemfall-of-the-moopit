@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import '@fontsource/fredoka/latin-700.css';
+import '@fontsource/cinzel-decorative/latin-700.css';
+import '@fontsource/cinzel/latin-400.css';
 import { RENDER_HEIGHT, RENDER_WIDTH, planRelayout } from './layout';
 import { BUILD_LABEL } from './version';
 import BootScene from './scenes/BootScene';
