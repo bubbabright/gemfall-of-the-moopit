@@ -103,10 +103,14 @@
       gap: 18px;
       background: radial-gradient(120% 90% at 50% -10%, #2a1a5e 0%, #180f3c 42%, #0b0718 78%);
       z-index: 10;
-      transition: opacity 320ms ease;
+      transition: opacity 600ms ease;
     }
 
+    /* After the splash has shown for 1.5 s, it fades out as the menu takes its place, the logo
+       swelling slightly as it goes (BootScene adds .done). */
     #boot.done { opacity: 0; pointer-events: none; }
+    #boot .logo { transition: transform 600ms ease; }
+    #boot.done .logo { transform: scale(1.06); }
 
     /* Boot splash: lettered gem logo over a field of falling gems. Pure CSS, no network. */
     #boot .fall { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
@@ -183,8 +187,11 @@
       color: rgba(140, 120, 190, 0.5);
     }
 
+    /* Hidden unless loading runs past the splash's 1.5 s (the inline script adds .slow). */
     #boot .loading {
       position: relative;
+      opacity: 0;
+      transition: opacity 400ms ease;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -194,6 +201,7 @@
       text-transform: uppercase;
       color: #a5a2d8;
     }
+    #boot.slow .loading { opacity: 1; }
 
     .spinner {
       width: 22px;
@@ -247,6 +255,12 @@
 
   <script>
     // Background gems for the boot splash. Runs inline so the splash paints before the game bundle loads.
+    // Still loading once the splash's 1.5 s are up: show the quiet "Loading gems…" line.
+    setTimeout(function () {
+      var boot = document.getElementById('boot');
+      if (boot && !boot.classList.contains('done')) boot.classList.add('slow');
+    }, 1500);
+
     (function () {
       var host = document.getElementById('boot-fall');
       if (!host) return;

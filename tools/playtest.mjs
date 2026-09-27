@@ -290,6 +290,9 @@ const pillAudit = (sceneKey) =>
 
 // ── menu ──────────────────────────────────────────────────────────────────────
 
+// The boot splash stays up for 1.5 s and then fades over the menu; judge the menu once the
+// splash is gone, or its logo is still in the screenshot.
+await waitFor(`!document.getElementById('boot')`, 'the boot splash to finish');
 await pump(60);
 const menuVisible = await evaluate(`window.gemfall.scene.isActive('menu')`);
 console.log('menu active:', menuVisible);
@@ -390,7 +393,7 @@ console.log('playing: mode=moves difficulty=normal');
 const playCentre = await evaluate(`
   (() => {
     const sc = window.gemfall.scene.getScene('menu');
-    const pill = sc.children.list.find((o) => o.opts && o.opts.label === 'PLAY');
+    const pill = sc.children.list.find((o) => o.opts && o.opts.label.startsWith('PLAY'));
     return pill ? { x: pill.x, y: pill.y } : { x: 360, y: 576 };
   })()
 `);

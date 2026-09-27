@@ -56,29 +56,44 @@ class Frame:
         n = len(pts) or 1
         return tuple(sum(p[i] for p in pts) // n for i in range(3))
 
-    def pill_spans(self, gy: float, band: int = 10):
-        """Pill columns along a game-space row, tolerant of text inside the pill.
+    def pill_spans(self, gy: float, boxes: list[dict], band: int = 10):
+        """The drawn extent of each pill along a game-space row, tolerant of text inside it.
 
-        The pill fill dominates the row, so its modal colour is the fill. A
-        column belongs to a pill when any pixel in a small vertical band matches
-        that fill, which bridges the label glyphs sitting in the middle.
+        Each pill's fill is sampled just inside its own left edge, on the centre line, where
+        no label, sub-label or icon is drawn (a selected pill can carry its own colour wash, so
+        one fill for the whole row doesn't hold). From the box's
+        centre, the span grows sideways while columns still show that fill somewhere in a
+        small vertical band, which bridges the label glyphs; a run of more than 3 columns
+        without it ends the span, so neighbouring pills never merge through their gap.
         """
         _, cy = self.to_px(0, gy)
         w, h = self.img.size
         ys = [y for y in range(max(0, cy - band), min(h, cy + band + 1))]
-        fill = Counter(self.px[x, y] for x in range(w) for y in ys).most_common(1)[0][0]
 
-        inside = []
-        for x in range(w):
-            inside.append(any(dist(self.px[x, y], fill) <= 18 for y in ys))
+        fills, spans = [], []
+        for box in boxes:
+            x0, _ = self.to_px(box["left"], gy)
+            x1, _ = self.to_px(box["right"], gy)
+            fill = self.patch(box["left"] + 14, gy, r=3)
+            has_fill = lambda x: any(dist(self.px[x, y], fill) <= 18 for y in ys)
 
-        spans: list[list[int]] = []
-        for x, hit in enumerate(inside):
-            if hit and spans and x - spans[-1][1] <= 3:
-                spans[-1][1] = x
-            elif hit:
-                spans.append([x, x])
-        return fill, [s for s in spans if s[1] - s[0] > 20]
+            mid = (x0 + x1) // 2
+            left = right = mid
+            miss = 0
+            for x in range(mid, -1, -1):
+                if has_fill(x):
+                    left, miss = x, 0
+                elif (miss := miss + 1) > 3:
+                    break
+            miss = 0
+            for x in range(mid, w):
+                if has_fill(x):
+                    right, miss = x, 0
+                elif (miss := miss + 1) > 3:
+                    break
+            fills.append(fill)
+            spans.append([left, right])
+        return fills, spans
 
 
 def check_menu(d: Path, geo: dict) -> bool:
@@ -97,14 +112,14 @@ def check_menu(d: Path, geo: dict) -> bool:
             continue
         # All pills in a picker row share a centre line; take it from the audit.
         gy = row["boxes"][0]["cy"]
-        fill, spans = fr.pill_spans(gy)
+        fills, spans = fr.pill_spans(gy, row["boxes"])
         spans_game = [
             (round((a / fr.dpr - fr.left) / fr.sw), round((b / fr.dpr - fr.left) / fr.sw))
             for a, b in spans
         ]
         expected = [(round(b["left"]), round(b["right"])) for b in row["boxes"]]
-        print(f"{group}: fill=#{fill[0]:02x}{fill[1]:02x}{fill[2]:02x} "
-              f"expected={expected} visible={spans_game}")
+        shown = " ".join(f"#{c[0]:02x}{c[1]:02x}{c[2]:02x}" for c in fills)
+        print(f"{group}: fills={shown} expected={expected} visible={spans_game}")
 
         if len(spans_game) != len(expected):
             print(f"  FAIL: {len(expected)} pills declared but {len(spans_game)} visible")

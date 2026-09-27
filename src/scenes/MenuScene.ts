@@ -26,9 +26,17 @@ import { haptics } from '../haptics';
 import { sfx } from '../audio/sfx';
 import { Pill } from '../ui/pill';
 import { gemTextureKey } from '../gfx/gems';
+import { LOGO_FONT, LOGO_GEMS, LOGO_LETTERS, LOGO_SUB_FONT, logoGemTexture } from '../gfx/logo';
 import { MENU_FOOT_SHIFT, MENU_HEIGHT, MENU_MID_SHIFT, useMenuCamera } from '../layout';
 
 const BASE_SCALE = 112 / TEX_SIZE;
+
+/** Each mode card's gem and colour, from the splash design. */
+const MODE_LOOK: Record<Mode, { gem: (typeof LOGO_GEMS)[keyof typeof LOGO_GEMS]; color: string }> = {
+  endless: { gem: LOGO_GEMS.amethyst, color: '#b061ff' },
+  timed: { gem: LOGO_GEMS.topaz, color: '#ffb52e' },
+  moves: { gem: LOGO_GEMS.sapphire, color: '#5c8dff' },
+};
 
 export default class MenuScene extends Phaser.Scene {
   private mode: Mode = 'endless';
@@ -67,32 +75,34 @@ export default class MenuScene extends Phaser.Scene {
     this.drawTitle();
 
     // ── Mode picker ────────────────────────────────────────────────────────────
-    this.sectionLabel('MODE', 250 + MENU_MID_SHIFT);
+    this.sectionLabel('MODE', 302 + MENU_MID_SHIFT);
     const modeCentres = menuRowCentres(MODE_ORDER.length, GAME_WIDTH);
     MODE_ORDER.forEach((mode, i) => {
       const pill = new Pill(this, {
         x: modeCentres[i],
-        y: 312 + MENU_MID_SHIFT,
+        y: 372 + MENU_MID_SHIFT,
         w: MENU.pillW,
-        h: 92,
+        h: 112,
         label: MODES[mode].label,
         sub: MODES[mode].sub,
         variant: 'ghost',
         fontSize: 24,
+        accent: MODE_LOOK[mode].color,
+        icon: logoGemTexture(this, MODE_LOOK[mode].gem, 26),
         onClick: () => this.selectMode(mode),
       });
       this.modePills.set(mode, pill);
     });
 
     // ── Difficulty picker ─────────────────────────────────────────────────────
-    this.sectionLabel('DIFFICULTY', 392 + MENU_MID_SHIFT);
+    this.sectionLabel('DIFFICULTY', 454 + MENU_MID_SHIFT);
     const difficultyCentres = menuRowCentres(DIFFICULTY_ORDER.length, GAME_WIDTH);
     DIFFICULTY_ORDER.forEach((difficulty, i) => {
       const pill = new Pill(this, {
         x: difficultyCentres[i],
-        y: 452 + MENU_MID_SHIFT,
+        y: 506 + MENU_MID_SHIFT,
         w: MENU.pillW,
-        h: 78,
+        h: 72,
         label: DIFFICULTIES[difficulty].label,
         sub: DIFFICULTIES[difficulty].sub,
         variant: 'ghost',
@@ -105,12 +115,14 @@ export default class MenuScene extends Phaser.Scene {
     // ── Play ──────────────────────────────────────────────────────────────────
     const play = new Pill(this, {
       x: GAME_WIDTH / 2,
-      y: 576 + MENU_MID_SHIFT,
+      y: 596 + MENU_MID_SHIFT,
       w: 460,
-      h: 88,
-      label: 'PLAY',
-      variant: 'primary',
-      fontSize: 32,
+      h: 84,
+      label: 'PLAY NOW',
+      variant: 'cta',
+      fontSize: 30,
+      labelFont: LOGO_SUB_FONT,
+      letterSpacing: 8,
       radius: 24,
       onClick: () => {
         sfx.unlock();
@@ -131,9 +143,9 @@ export default class MenuScene extends Phaser.Scene {
     if (saved) {
       this.resumePill = new Pill(this, {
         x: GAME_WIDTH / 2,
-        y: 668 + MENU_MID_SHIFT,
+        y: 684 + MENU_MID_SHIFT,
         w: 460,
-        h: 72,
+        h: 68,
         label: 'RESUME RUN',
         sub: `${MODES[saved.mode].label} · ${DIFFICULTIES[saved.difficulty].label} · ${saved.score.toLocaleString()} pts`,
         variant: 'accent',
@@ -150,7 +162,7 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     this.bestText = this.add
-      .text(GAME_WIDTH / 2, 736 + MENU_MID_SHIFT, '', {
+      .text(GAME_WIDTH / 2, 750 + MENU_MID_SHIFT, '', {
         fontFamily: FONT,
         fontSize: '20px',
         color: '#c9c6f5',
@@ -319,47 +331,80 @@ export default class MenuScene extends Phaser.Scene {
     g.strokeRoundedRect(18, 18, GAME_WIDTH - 36, MENU_HEIGHT - 36, 34);
   }
 
+  /**
+   * The lettered-gem logo from the boot splash: a row of gems, GEMFALL with each letter in its
+   * gem's colour, "of the Moopit", then the tagline (the line the private voice changes).
+   */
   private drawTitle(): void {
-    const title = this.add
-      .text(GAME_WIDTH / 2, 140 + MENU_MID_SHIFT, 'GEMFALL', {
-        fontFamily: FONT,
-        fontSize: '96px',
-        fontStyle: 'bold',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-    title.setShadow(0, 8, 'rgba(10,4,32,0.75)', 14, true, true);
-
-    // Gradient illusion: overlay a second, tinted copy clipped by alpha tween.
-    const gloss = this.add
-      .text(GAME_WIDTH / 2, 140 + MENU_MID_SHIFT, 'GEMFALL', {
-        fontFamily: FONT,
-        fontSize: '96px',
-        fontStyle: 'bold',
-        color: '#c7d2fe',
-      })
-      .setOrigin(0.5)
-      .setAlpha(0.55)
-      .setBlendMode(Phaser.BlendModes.ADD);
-
-    this.tweens.add({
-      targets: gloss,
-      alpha: 0.18,
-      duration: 2200,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+    // Centred on the lettering, so the tap squash and the drift pivot on the word.
+    const logo = this.add.container(GAME_WIDTH / 2, 172 + MENU_MID_SHIFT);
+    const gemSize = 36;
+    const gemGap = 12;
+    const rowWidth = LOGO_LETTERS.length * gemSize + (LOGO_LETTERS.length - 1) * gemGap;
+    LOGO_LETTERS.forEach(({ gem }, i) => {
+      const x = -rowWidth / 2 + gemSize / 2 + i * (gemSize + gemGap);
+      const image = this.add.image(x, -68, logoGemTexture(this, gem, gemSize));
+      logo.add(image);
+      this.tweens.add({
+        targets: image,
+        scale: 1.2,
+        duration: 1300,
+        delay: i * 220,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
     });
 
+    // Letters are separate texts so each can carry its own colour and glow.
+    const letters = LOGO_LETTERS.map(({ letter, color }) =>
+      this.add
+        .text(0, 0, letter, {
+          fontFamily: LOGO_FONT,
+          fontSize: '86px',
+          fontStyle: 'bold',
+          color,
+        })
+        .setOrigin(0, 0.5)
+        .setShadow(0, 0, `${color}99`, 16, false, true),
+    );
+    // Lay the letters out by their advance widths, then pad each canvas: Cinzel Decorative's
+    // swashes (the tail of the last L) reach past the advance and would otherwise be clipped.
+    const advances = letters.map((t) => t.width);
+    const lettersWidth = advances.reduce((sum, w) => sum + w, 0);
+    const swash = 80;
+    let x = -lettersWidth / 2;
+    letters.forEach((text, i) => {
+      text.setPadding(swash, 10, swash, 10).setX(x - swash);
+      x += advances[i];
+    });
+    logo.add(letters);
+
+    logo.add(
+      this.add
+        .text(0, 68, 'OF THE MOOPIT', {
+          fontFamily: LOGO_SUB_FONT,
+          fontSize: '22px',
+          color: '#bea5ff',
+        })
+        .setOrigin(0.5)
+        .setLetterSpacing(9)
+        .setAlpha(0.8),
+    );
+
     this.taglineText = this.add
-      .text(GAME_WIDTH / 2, 200 + MENU_MID_SHIFT, voiceFor(this.moopit).menuTagline, {
+      .text(0, 100, voiceFor(this.moopit).menuTagline, {
         fontFamily: FONT,
-        fontSize: '21px',
+        fontSize: '19px',
         color: this.moopit ? MOOPIT_ACCENT : '#a5a2d8',
       })
       .setOrigin(0.5);
+    logo.add(this.taglineText);
 
-    this.wireMoopitTitle(title, gloss);
+    // The whole logo drifts gently, like the splash.
+    this.tweens.add({ targets: logo, y: logo.y - 9, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    this.wireMoopitTitle(logo, lettersWidth, 86 + MENU_MID_SHIFT, 222 + MENU_MID_SHIFT);
   }
 
   /**
@@ -369,11 +414,13 @@ export default class MenuScene extends Phaser.Scene {
    * a queue of stray taps would eventually fall through the door.
    *
    * The title art never changes — this only decides what the line under it says.
-   * The gloss is tweened with the title so the two copies never separate while squashing.
+   * The tap target is the gem row and the lettering (from `top` to `bottom` in menu space).
    */
-  private wireMoopitTitle(title: Phaser.GameObjects.Text, gloss: Phaser.GameObjects.Text): void {
-    title.setInteractive({ useHandCursor: true });
-    title.on('pointerdown', () => {
+  private wireMoopitTitle(logo: Phaser.GameObjects.Container, width: number, top: number, bottom: number): void {
+    const hit = this.add
+      .zone(GAME_WIDTH / 2, (top + bottom) / 2, width, bottom - top)
+      .setInteractive({ useHandCursor: true });
+    hit.on('pointerdown', () => {
       const now = this.time.now;
       this.titleTaps = now - this.lastTitleTapAt > MOOPIT_TAP_WINDOW_MS ? 1 : this.titleTaps + 1;
       this.lastTitleTapAt = now;
@@ -381,7 +428,7 @@ export default class MenuScene extends Phaser.Scene {
       sfx.unlock();
       sfx.click();
       this.tweens.add({
-        targets: [title, gloss],
+        targets: logo,
         scale: { from: 0.94, to: 1 },
         duration: 90,
         ease: 'Quad.easeOut',

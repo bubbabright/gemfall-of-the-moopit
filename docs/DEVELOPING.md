@@ -71,6 +71,8 @@ src/
   ui/pill.ts         the rounded button used everywhere (read the hit-area note in it)
   gfx/gems.ts        procedural gem and power-gem textures
   audio/sfx.ts       procedural WebAudio sound effects
+  gfx/logo.ts        the lettered-gem GEMFALL logo for the menu (shapes, colours, fonts); the
+                     boot splash in index.html draws the same logo in CSS, so keep them in step
 public/
   manifest.webmanifest   name, colours and icons for "Add to Home screen"
   icons/             home-screen icons, drawn by tools/make-icons.py
@@ -204,6 +206,16 @@ No iPhone-only tags or icons: the players are on Android.
 
 If a phone seems stuck on an old build: open the game once with a connection, close it, and
 open it again.
+
+### Opening screen
+
+`index.html` shows the splash first: the lettered-gem logo over falling gems, no buttons. It is
+plain CSS plus a tiny inline script, so it paints before the game bundle loads. `BootScene`
+keeps it up for at least `SPLASH_MS` (1.5 s from page load) and until the fonts are ready (capped
+at 2.5 s), then adds `.done`: the splash fades out over 600 ms while the menu starts under it.
+If loading runs past 1.5 s, a quiet "Loading gems…" line appears. The logo faces, Cinzel
+Decorative and Cinzel, are bundled with `@fontsource` like Fredoka; nothing is fetched from a
+font service.
 
 ### Screen layout
 

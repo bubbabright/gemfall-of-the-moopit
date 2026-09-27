@@ -2,6 +2,11 @@ import Phaser from 'phaser';
 import { DIFFICULTIES, MODES, type Difficulty, type Mode } from '../config';
 import { generateGemTextures, generateUtilityTextures } from '../gfx/gems';
 
+/** How long the boot splash shows, at least, before the menu (ms since the page started). */
+const SPLASH_MS = 1500;
+
+const wait = (ms: number): Promise<void> => new Promise((resolve) => window.setTimeout(resolve, ms));
+
 /** Generates all procedural art, then hands off to the menu (or a deep-linked run). */
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -13,21 +18,30 @@ export default class BootScene extends Phaser.Scene {
     generateGemTextures(this);
 
     // Canvas text draws with whatever face is ready at the time, so wait for the message font
-    // before any scene makes text. Capped, so a slow or failed load falls back to Inter.
-    const fontReady = document.fonts?.load('700 32px Fredoka') ?? Promise.resolve();
-    const cap = new Promise((resolve) => window.setTimeout(resolve, 1500));
-    void Promise.race([fontReady, cap])
-      .catch(() => undefined)
-      .then(() => this.handOff());
+    // and the logo faces before any scene makes text. Capped, so a slow or failed load falls
+    // back to Inter and Georgia.
+    const fontsReady = document.fonts
+      ? Promise.all([
+          document.fonts.load('700 32px Fredoka'),
+          document.fonts.load('700 86px "Cinzel Decorative"'),
+          document.fonts.load('400 22px Cinzel'),
+        ])
+      : Promise.resolve();
+    const cap = wait(2500);
+    // The splash is the entry screen: it stays up for at least SPLASH_MS from page load, then
+    // fades into the menu.
+    const splash = wait(Math.max(0, SPLASH_MS - performance.now()));
+    void Promise.all([Promise.race([fontsReady, cap]).catch(() => undefined), splash]).then(() =>
+      this.handOff(),
+    );
   }
 
   private handOff(): void {
-
-    // Hide the HTML boot splash now that textures exist.
+    // Fade the HTML splash out as the menu starts under it (600 ms, see #boot in index.html).
     const boot = document.getElementById('boot');
     if (boot) {
       boot.classList.add('done');
-      window.setTimeout(() => boot.remove(), 400);
+      window.setTimeout(() => boot.remove(), 700);
     }
 
     // Deep link: index.html?auto=1&mode=timed&difficulty=hard skips the menu.

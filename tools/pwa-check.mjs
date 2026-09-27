@@ -162,7 +162,7 @@ check(plainRegs === 0, `plain local preview registers no service worker (found $
 
 // ── wake lock ─────────────────────────────────────────────────────────────────
 await evaluate(
-  `window.gemfall.scene.getScene('menu').children.list.find((o) => o.opts && o.opts.label === 'PLAY').opts.onClick()`,
+  `window.gemfall.scene.getScene('menu').children.list.find((o) => o.opts && o.opts.label.startsWith('PLAY')).opts.onClick()`,
 );
 await waitFor(`window.gemfall.scene.isActive('game')`, 'the game scene to start');
 await sleep(300);
