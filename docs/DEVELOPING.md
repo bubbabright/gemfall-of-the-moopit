@@ -165,8 +165,9 @@ card really draws its gem, only the selected card's name is lit in its colour, o
 selected difficulty chip is filled, and the board really shows every cell filled with the right
 number of gem colours.
 
-**`scaling`** loads the game at seven viewports (tall Androids with and without browser bars,
-an iPhone, a small Android, a phone in landscape, a tablet, a short desktop window). At each it
+**`scaling`** loads the game at nine viewports (the 1080 × 2400 target phone in Chrome and
+installed, tall Androids with and without browser bars, an iPhone, a small Android, a phone in
+landscape, a tablet, a short desktop window). At each it
 checks the layout `src/layout.ts` picked, that the canvas fits and, where it should, fills the
 screen, and the render zoom. On phones and tablets it taps a gem and checks that gem gets
 selected. Last, it turns a phone portrait → landscape → portrait mid-run and checks the canvas

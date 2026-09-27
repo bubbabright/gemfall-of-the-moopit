@@ -445,7 +445,12 @@ await tapSelector('#corners .speaker');
 if ((await storedSettings()).muted !== false) problems.push('the speaker did not unmute');
 
 if (!(await tapSelector('#corners .gear'))) problems.push('corner gear not on the menu');
-await sleep(400); // the sheet slides up for 260 ms; tap once it has landed
+// The sheet slides up (260 ms, slower in headless); tap once it has landed, or the button
+// moves under the finger and the click goes to the sheet instead.
+await waitFor(
+  `document.querySelector('#settings .sheet')?.getAnimations().length === 0`,
+  'the settings sheet to land',
+);
 const sheetOpen = await evaluate(`!!document.querySelector('#settings:not([hidden])')`);
 if (!sheetOpen) {
   problems.push('the gear did not open settings');

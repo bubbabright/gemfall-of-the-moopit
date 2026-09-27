@@ -78,3 +78,23 @@ time the game opens with a connection; offline it uses the copy saved with the l
   and Cloudflare shows a 520.
 - **Opening it.** Open the game as its own page. Inside another site's frame (an embed, or a
   dashboard modal), Chrome blocks vibration.
+
+## Test builds on Vercel
+
+The live site stays on Netlify (`main`, `gemfall.moopit.fun`). Vercel is for trying a branch on
+real phones before it ships: it builds every pushed branch to its own preview URL, over https,
+so the installable app and offline play work there (they don't on the plain-http LAN preview).
+
+- **Set up once:** in Vercel, Add New → Project → Import `bubbabright/gemfall-of-the-moopit`.
+  `vercel.json` sets the build (`npm run build` into `dist/`) and the same caching headers as
+  `netlify.toml`: hashed `/assets/` immutable; `index.html`, `sw.js` and
+  `manifest.webmanifest` must-revalidate.
+- **Each push** to a branch then gets a preview URL in the Vercel dashboard (and on the
+  branch's commits on GitHub). Open it on the phones, add it to the home screen to test the app.
+- **Version stamp:** Vercel sets `VERCEL_GIT_COMMIT_SHA`, so the menu shows the commit, the same
+  as a Netlify build.
+- **From a Claude Code on the web session**, deploying needs `api.vercel.com` and `vercel.com`
+  in the environment's allowed domains and a token in `VERCEL_TOKEN`; then
+  `npx vercel deploy --token "$VERCEL_TOKEN"` from the repo root.
+
+Don't point Vercel's production domain at `gemfall.moopit.fun`: DNS stays on Netlify.

@@ -24,6 +24,9 @@ const BASE = process.argv[2] ?? 'https://gemfall.moopit.fun';
 const PORT = 4787;
 
 const VIEWPORTS = [
+  // Daniel's phone: 1080 x 2400, 20:9, ~409 ppi. In Chrome and installed (no URL bar).
+  { label: '1080x2400 Android in Chrome', width: 411, height: 751, dpr: 2.625, mobile: true },
+  { label: '1080x2400 Android installed', width: 411, height: 866, dpr: 2.625, mobile: true },
   { label: 'tall Android (no browser bars)', width: 412, height: 915, dpr: 2.625, mobile: true },
   { label: 'tall Android (with browser bars)', width: 412, height: 780, dpr: 2.625, mobile: true },
   { label: 'iPhone 14 portrait', width: 390, height: 844, dpr: 3, mobile: true },

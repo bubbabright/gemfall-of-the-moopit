@@ -67,9 +67,9 @@ export default defineConfig(({ command, mode }) => {
   // Never spread this object into `define`, or secrets would end up in the bundle.
   const env = loadEnv(mode, '.', '');
 
-  // Netlify sets COMMIT_REF when it builds from git; GIT_COMMIT covers local builds
-  // that want the same stamp. Falls back to 'local' for a plain dev run.
-  const buildId = (env.COMMIT_REF ?? env.GIT_COMMIT ?? 'local').slice(0, 7);
+  // Netlify sets COMMIT_REF and Vercel VERCEL_GIT_COMMIT_SHA when they build from git;
+  // GIT_COMMIT covers local builds that want the same stamp. 'local' for a plain dev run.
+  const buildId = (env.COMMIT_REF ?? env.VERCEL_GIT_COMMIT_SHA ?? env.GIT_COMMIT ?? 'local').slice(0, 7);
 
   return {
     // Relative base keeps the build portable (Netlify root, subpath, or local file server).
