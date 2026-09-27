@@ -108,41 +108,116 @@
 
     #boot.done { opacity: 0; pointer-events: none; }
 
-    #boot h1 {
-      margin: 0;
-      font-size: clamp(30px, 7vw, 54px);
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      background: linear-gradient(180deg, #ffffff 0%, #c7d2fe 60%, #a5b4fc 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      filter: drop-shadow(0 2px 18px rgba(165, 180, 252, 0.45));
+    /* Boot splash: lettered gem logo over a field of falling gems. Pure CSS, no network. */
+    #boot .fall { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+
+    #boot .fall i {
+      position: absolute;
+      top: -60px;
+      display: block;
+      animation: gem-fall linear infinite;
     }
 
-    #boot p {
+    .gem {
+      display: block;
+      background: linear-gradient(140deg, rgba(255, 255, 255, 0.32) 0%, var(--top) 22%, var(--base) 62%, rgba(0, 0, 0, 0.22) 100%);
+    }
+    .gem.diamond  { clip-path: polygon(50% 0%, 100% 36%, 76% 100%, 24% 100%, 0% 36%); }
+    .gem.hex      { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+    .gem.shield   { clip-path: polygon(10% 0%, 90% 0%, 100% 57%, 50% 100%, 0% 57%); }
+    .gem.kite     { clip-path: polygon(50% 0%, 100% 38%, 80% 100%, 20% 100%, 0% 38%); }
+    .gem.octagon  { clip-path: polygon(29% 0%, 71% 0%, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0% 71%, 0% 29%); }
+    .gem.marquise { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+
+    #boot .logo {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      animation: float-y 3.6s ease-in-out infinite;
+    }
+
+    #boot .gems {
+      display: flex;
+      align-items: flex-end;
+      gap: clamp(4px, 1.4vw, 10px);
+    }
+
+    #boot .gems span {
+      display: block;
+      filter: drop-shadow(0 0 7px var(--glow));
+      animation: gem-pulse 2.6s ease-in-out infinite;
+      animation-delay: calc(var(--i) * 0.22s);
+    }
+
+    #boot .gems .gem { width: clamp(20px, 5.4vw, 28px); height: clamp(20px, 5.4vw, 28px); }
+
+    #boot h1 {
       margin: 0;
-      font-size: 14px;
+      display: flex;
+      font-family: "Cinzel Decorative", Georgia, serif;
+      font-size: clamp(2.6rem, 8.8vw, 5.4rem);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    #boot h1 span {
+      color: var(--c);
+      text-shadow: 0 0 18px color-mix(in srgb, var(--c) 53%, transparent), 0 0 38px color-mix(in srgb, var(--c) 27%, transparent);
+    }
+
+    #boot .sub {
+      margin: 0;
+      font-family: "Cinzel", Georgia, serif;
+      font-size: clamp(0.7rem, 2.4vw, 1rem);
+      letter-spacing: 0.44em;
+      text-transform: uppercase;
+      color: rgba(190, 165, 255, 0.72);
+    }
+
+    #boot .tag {
+      margin: 0;
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(140, 120, 190, 0.5);
+    }
+
+    #boot .loading {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 12px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: #a5a2d8;
     }
 
     .spinner {
-      width: 46px;
-      height: 46px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
-      border: 3px solid rgba(165, 180, 252, 0.22);
+      border: 2px solid rgba(165, 180, 252, 0.22);
       border-top-color: var(--accent);
       border-right-color: var(--accent-2);
       animation: spin 900ms linear infinite;
     }
+
+    @keyframes gem-fall {
+      from { transform: translateY(0) rotate(0deg); }
+      to   { transform: translateY(115vh) rotate(200deg); }
+    }
+    @keyframes gem-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    @keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (prefers-reduced-motion: reduce) {
       body::before { animation: none; }
       .spinner { animation-duration: 2.4s; }
+      #boot .fall i, #boot .gems span, #boot .logo { animation: none; }
     }
   </style>
 </head>
@@ -150,10 +225,52 @@
   <div id="game"></div>
 
   <div id="boot">
-    <h1>Gemfall</h1>
-    <div class="spinner"></div>
-    <p>Loading gems…</p>
+    <div class="fall" id="boot-fall" aria-hidden="true"></div>
+    <div class="logo">
+      <div class="gems" aria-hidden="true">
+        <span style="--i:0;--glow:#22ee6699"><i class="gem shield"   style="--top:#44ee77;--base:#11bb44"></i></span>
+        <span style="--i:1;--glow:#ff336699"><i class="gem diamond"  style="--top:#ff6688;--base:#ee0033"></i></span>
+        <span style="--i:2;--glow:#3377ff99"><i class="gem hex"      style="--top:#5599ff;--base:#1155ff"></i></span>
+        <span style="--i:3;--glow:#ffbb1199"><i class="gem octagon"  style="--top:#ffcc44;--base:#ffaa00"></i></span>
+        <span style="--i:4;--glow:#bb44ff99"><i class="gem kite"     style="--top:#cc77ff;--base:#9911ff"></i></span>
+        <span style="--i:5;--glow:#11ddff99"><i class="gem marquise" style="--top:#55eeff;--base:#00ccff"></i></span>
+        <span style="--i:6;--glow:#ff551199"><i class="gem diamond"  style="--top:#ff8866;--base:#ff4400"></i></span>
+      </div>
+      <h1 aria-label="Gemfall">
+        <span style="--c:#22ee66">G</span><span style="--c:#ff3366">E</span><span style="--c:#3377ff">M</span><span style="--c:#ffbb11">F</span><span style="--c:#bb44ff">A</span><span style="--c:#11ddff">L</span><span style="--c:#ff5511">L</span>
+      </h1>
+      <p class="sub">of the Moopit</p>
+      <p class="tag">Match · Chain · Explode</p>
+    </div>
+    <div class="loading"><div class="spinner"></div><span>Loading gems…</span></div>
   </div>
+
+  <script>
+    // Background gems for the boot splash. Runs inline so the splash paints before the game bundle loads.
+    (function () {
+      var host = document.getElementById('boot-fall');
+      if (!host) return;
+      var kinds = [
+        ['shield', '#44ee77', '#11bb44'], ['diamond', '#ff6688', '#ee0033'], ['hex', '#5599ff', '#1155ff'],
+        ['octagon', '#ffcc44', '#ffaa00'], ['kite', '#cc77ff', '#9911ff'], ['marquise', '#55eeff', '#00ccff'],
+        ['diamond', '#ff8866', '#ff4400']
+      ];
+      for (var n = 0; n < 28; n++) {
+        var k = kinds[n % kinds.length];
+        var size = 15 + Math.random() * 28;
+        var wrap = document.createElement('i');
+        wrap.style.left = ((n * 3.6 + Math.random() * 3.5) % 101) + '%';
+        wrap.style.opacity = String(0.08 + Math.random() * 0.22);
+        wrap.style.animationDuration = (7 + Math.random() * 10) + 's';
+        wrap.style.animationDelay = '-' + (Math.random() * 17) + 's';
+        var gem = document.createElement('b');
+        gem.className = 'gem ' + k[0];
+        gem.style.cssText = 'width:' + size + 'px;height:' + size + 'px;--top:' + k[1] + ';--base:' + k[2];
+        wrap.appendChild(gem);
+        host.appendChild(wrap);
+      }
+    })();
+  </script>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

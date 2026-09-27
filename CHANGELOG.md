@@ -4,6 +4,7 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 ## Not live yet
 
+- New loading screen: the colorful GEMFALL logo with gems raining behind it.
 - You can add GEMFALL to your phone's home screen. It gets its own gem icon, opens full screen
   without the browser bar, and works with no signal once you've played it. The screen stays on
   while you play. How-to is in the
