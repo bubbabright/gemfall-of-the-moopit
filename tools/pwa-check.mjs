@@ -161,9 +161,8 @@ const plainRegs = await evaluate(`navigator.serviceWorker.getRegistrations().the
 check(plainRegs === 0, `plain local preview registers no service worker (found ${plainRegs})`);
 
 // ── wake lock ─────────────────────────────────────────────────────────────────
-await evaluate(
-  `window.gemfall.scene.getScene('menu').children.list.find((o) => o.opts && o.opts.label.startsWith('PLAY')).opts.onClick()`,
-);
+await waitFor(`!!document.querySelector('#front.menu')`, 'the menu to appear');
+await evaluate(`document.querySelector('#front .play').click()`);
 await waitFor(`window.gemfall.scene.isActive('game')`, 'the game scene to start');
 await sleep(300);
 check((await evaluate('window.__wakeLocks')) > 0, 'starting a game asks to keep the screen on');

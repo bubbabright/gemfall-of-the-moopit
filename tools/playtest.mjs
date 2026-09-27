@@ -289,119 +289,118 @@ const pillAudit = (sceneKey) =>
   `);
 
 // ── menu ──────────────────────────────────────────────────────────────────────
+//
+// The menu is HTML over the canvas (src/ui/front.ts). The boot splash stays up for 1.5 s and
+// then the menu grows out of it; judge it once the entrance has finished (#front.settled).
 
-// The boot splash stays up for 1.5 s and then fades over the menu; judge the menu once the
-// splash is gone, or its logo is still in the screenshot.
-await waitFor(`!document.getElementById('boot')`, 'the boot splash to finish');
-await pump(60);
+await waitFor(`!!document.querySelector('#front.menu.settled')`, 'the menu to settle after the splash');
 const menuVisible = await evaluate(`window.gemfall.scene.isActive('menu')`);
 console.log('menu active:', menuVisible);
 if (!menuVisible) problems.push('menu scene never became active');
 await screenshot('menu');
 
-const menuRows = await pillAudit('menu');
-for (const [group, row] of Object.entries(menuRows)) {
-  const overlapping = row.gaps.filter((g) => g < 8);
-  const overflowing = row.boxes.filter((b) => b.widestText > b.w - 16);
-  console.log(
-    `${group}: boxes=${row.boxes.map((b) => `[${Math.round(b.left)},${Math.round(b.right)}]`).join(' ')} gaps=${JSON.stringify(row.gaps)}`,
-  );
-  if (overlapping.length) problems.push(`${group} pills overlap (gaps ${JSON.stringify(row.gaps)})`);
-  for (const b of overflowing) {
-    problems.push(`${group} pill '${b.name}' text overflows (${b.widestText}px in ${b.w}px)`);
-  }
-}
-
-// The sound and haptics toggles share one row and are not part of the picker maps, so
-// audit them here for overlap and label overflow.
-const toggles = await evaluate(`
+/** Page-space boxes of the menu's buttons, grouped by row, plus the text each one needs. */
+const menuRows = await evaluate(`
   (() => {
-    const sc = window.gemfall.scene.getScene('menu');
-    const out = {};
-    for (const [name, pill] of [['buzz', sc.hapticPill], ['sound', sc.mutePill]]) {
-      if (!pill) { out[name] = null; continue; }
-      const texts = pill.list.filter((k) => k.type === 'Text').map((t) => Math.round(t.displayWidth));
-      out[name] = {
-        left: pill.x - pill.opts.w / 2,
-        right: pill.x + pill.opts.w / 2,
-        w: pill.opts.w,
-        widestText: texts.length ? Math.max(...texts) : 0,
+    const box = (b) => {
+      const r = b.getBoundingClientRect();
+      return {
+        left: r.left, right: r.right, top: r.top, bottom: r.bottom,
+        cx: r.left + r.width / 2, cy: r.top + r.height / 2,
+        // Overflow: the text itself spilling past the button. (Not scrollWidth: the chips'
+        // bigger invisible tap area would count as overflow.)
+        overflow: (() => {
+          const range = document.createRange();
+          range.selectNodeContents(b);
+          const t = range.getBoundingClientRect();
+          return t.left < r.left - 1 || t.right > r.right + 1;
+        })(),
+        name: b.dataset.mode || b.dataset.difficulty || b.textContent.trim(),
+        selected: b.getAttribute('aria-pressed') === 'true',
       };
+    };
+    const rows = {};
+    const groups = { mode: '#front .modes .mode', difficulty: '#front .chips.difficulty .chip', settings: '#front .chips.settings .chip' };
+    for (const [group, sel] of Object.entries(groups)) {
+      const boxes = [...document.querySelectorAll(sel)].map(box);
+      const gaps = [];
+      for (let i = 0; i < boxes.length - 1; i++) gaps.push(+(boxes[i + 1].left - boxes[i].right).toFixed(1));
+      rows[group] = { boxes, gaps };
     }
-    return out;
+    const play = document.querySelector('#front .play');
+    rows.play = play ? { boxes: [box(play)], gaps: [] } : null;
+    return rows;
   })()
 `);
-if (toggles.buzz && toggles.sound) {
-  const gap = toggles.sound.left - toggles.buzz.right;
-  console.log(
-    `toggles: buzz=[${Math.round(toggles.buzz.left)},${Math.round(toggles.buzz.right)}] ` +
-      `sound=[${Math.round(toggles.sound.left)},${Math.round(toggles.sound.right)}] gap=${gap.toFixed(1)}`,
-  );
-  if (gap < 8) problems.push(`sound/haptics toggles overlap (gap ${gap.toFixed(1)}px)`);
-  for (const [name, t] of Object.entries(toggles)) {
-    if (t.left < 18) problems.push(`${name} toggle runs off the left edge (${Math.round(t.left)})`);
-    if (t.widestText > t.w - 16) {
-      problems.push(`${name} toggle label overflows (${t.widestText}px in ${t.w}px)`);
-    }
+
+const viewportW = (await evaluate('innerWidth')) ?? 0;
+for (const [group, row] of Object.entries(menuRows)) {
+  if (!row || !row.boxes.length) {
+    problems.push(`menu ${group} buttons not found`);
+    continue;
   }
-} else {
-  problems.push('sound/haptics toggle pills not found');
+  console.log(`${group}: ${row.boxes.map((b) => `${b.name}[${Math.round(b.left)},${Math.round(b.right)}]`).join(' ')} gaps=${JSON.stringify(row.gaps)}`);
+  // Rows may wrap on a narrow phone, so only neighbours on the same line can overlap.
+  row.boxes.forEach((b, i) => {
+    const next = row.boxes[i + 1];
+    if (next && Math.abs(next.cy - b.cy) < 4 && next.left - b.right < 2) {
+      problems.push(`${group} buttons '${b.name}' and '${next.name}' overlap`);
+    }
+    if (b.overflow) problems.push(`${group} button '${b.name}' text overflows`);
+    if (b.left < 0 || b.right > viewportW) problems.push(`${group} button '${b.name}' runs off screen`);
+  });
 }
 
-/** Click a pill by its own declared centre and report what got selected. */
-const clickPillAndRead = async (sceneKey, group, name, readExpr) => {
-  const centre = await evaluate(`
-    (() => {
-      const sc = window.gemfall.scene.getScene('${sceneKey}');
-      const pill = sc.${group}.get('${name}');
-      return pill ? { x: pill.x, y: pill.y } : null;
-    })()
-  `);
-  if (!centre) {
-    problems.push(`${group} pill '${name}' not found`);
-    return null;
-  }
-  await click(centre.x, centre.y);
-  await pump(20);
-  return evaluate(readExpr);
+/** Tap a page point (CSS px) with the mouse. */
+const tapPage = async (x, y) => {
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', clickCount: 0 });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+  await sleep(60);
 };
 
-const modeRead = `window.gemfall.scene.getScene('menu').mode`;
-const difficultyRead = `window.gemfall.scene.getScene('menu').difficulty`;
+/** Tap a menu button at the centre of its box and report what got selected. */
+const tapAndRead = async (group, name, read) => {
+  const b = menuRows[group]?.boxes.find((x) => x.name === name);
+  if (!b) {
+    problems.push(`${group} button '${name}' not found`);
+    return null;
+  }
+  await tapPage(b.cx, b.cy);
+  return evaluate(`window.gemfallMenu.${read}`);
+};
 
-const chosenMode = await clickPillAndRead('menu', 'modePills', 'moves', modeRead);
-console.log(`tapped the centre of 'moves' -> mode='${chosenMode}'`);
-if (chosenMode !== 'moves') problems.push(`tapping the centre of the 'moves' pill selected '${chosenMode}'`);
+// The centre of every mode card and difficulty chip must pick that one, including the
+// first and last, whose neighbours would steal a misplaced tap.
+for (const name of ['moves', 'timed', 'endless']) {
+  const got = await tapAndRead('mode', name, 'mode');
+  if (got !== name) problems.push(`tapping the centre of the '${name}' card selected '${got}'`);
+}
+for (const name of ['hard', 'easy', 'normal']) {
+  const got = await tapAndRead('difficulty', name, 'difficulty');
+  if (got !== name) problems.push(`tapping the centre of the '${name}' chip selected '${got}'`);
+}
+const shown = await evaluate(`[...document.querySelectorAll('#front [aria-pressed="true"]')].map((b) => b.dataset.mode || b.dataset.difficulty)`);
+console.log('selected on screen:', JSON.stringify(shown));
+if (JSON.stringify(shown) !== JSON.stringify(['endless', 'normal'])) {
+  problems.push(`menu highlights ${JSON.stringify(shown)}, expected endless + normal`);
+}
 
-const chosenDifficulty = await clickPillAndRead('menu', 'difficultyPills', 'normal', difficultyRead);
-console.log(`tapped the centre of 'normal' -> difficulty='${chosenDifficulty}'`);
-if (chosenDifficulty !== 'normal') problems.push(`tapping the centre of the 'normal' pill selected '${chosenDifficulty}'`);
-
-// Also verify the first pill in each row, since the bug made the *right* half of a pill dead.
-const chosenFirstMode = await clickPillAndRead('menu', 'modePills', 'endless', modeRead);
-if (chosenFirstMode !== 'endless') problems.push(`tapping 'endless' selected '${chosenFirstMode}'`);
-const chosenFirstDifficulty = await clickPillAndRead('menu', 'difficultyPills', 'easy', difficultyRead);
-if (chosenFirstDifficulty !== 'easy') problems.push(`tapping 'easy' selected '${chosenFirstDifficulty}'`);
-
-// Settle back on the run we actually want to play.
-await clickPillAndRead('menu', 'modePills', 'moves', modeRead);
-await clickPillAndRead('menu', 'difficultyPills', 'normal', difficultyRead);
+// Settle on the run we actually want to play.
+await tapAndRead('mode', 'moves', 'mode');
+await tapAndRead('difficulty', 'normal', 'difficulty');
 console.log('playing: mode=moves difficulty=normal');
 
 // ── start the run ─────────────────────────────────────────────────────────────
 
-const playCentre = await evaluate(`
-  (() => {
-    const sc = window.gemfall.scene.getScene('menu');
-    const pill = sc.children.list.find((o) => o.opts && o.opts.label.startsWith('PLAY'));
-    return pill ? { x: pill.x, y: pill.y } : { x: 360, y: 576 };
-  })()
-`);
-await click(playCentre.x, playCentre.y);
+const playBox = menuRows.play?.boxes[0];
+if (playBox) await tapPage(playBox.cx, playBox.cy);
+else problems.push('PLAY NOW not found');
 await pump(120);
 
 await waitFor(`window.gemfall.scene.isActive('game')`, 'game scene to start');
 console.log('game started:', await sceneState());
+await waitFor(`!!document.querySelector('#front.gone')`, 'the menu to fade away');
 await pump(60);
 await screenshot('game-start');
 
@@ -619,6 +618,32 @@ if (slowestMoveMs < 600) {
   problems.push(
     `clears resolve too fast to read (slowest move ${Math.round(slowestMoveMs)}ms, expected >= 600ms)`,
   );
+}
+
+// ── back to the menu ──────────────────────────────────────────────────────────
+//
+// The in-game MENU button must bring the HTML menu back over the canvas, still set to the
+// run that was just played, and with the saved run offered to resume.
+const menuPillAt = await evaluate(`
+  (() => {
+    const p = window.gemfall.scene.getScene('game').hudPills.get('menu');
+    return p ? { x: p.x, y: p.y } : null;
+  })()
+`);
+if (menuPillAt) {
+  await click(menuPillAt.x, menuPillAt.y);
+  await pump(30);
+  const back = await waitFor(`!!document.querySelector('#front.menu:not(.hidden):not(.gone)')`, 'the menu to come back')
+    .then(() => true)
+    .catch(() => false);
+  const picks = await evaluate(`({ mode: window.gemfallMenu.mode, difficulty: window.gemfallMenu.difficulty, resume: !!document.querySelector('#front .resume') })`);
+  console.log('back on the menu:', back, JSON.stringify(picks));
+  if (!back) problems.push('the MENU button did not bring the menu back');
+  else if (picks.mode !== 'moves' || picks.difficulty !== 'normal') {
+    problems.push(`menu forgot the run's picks (${picks.mode} / ${picks.difficulty})`);
+  }
+} else {
+  problems.push('in-game MENU button not found');
 }
 
 console.log('\n--- playtest report ---');

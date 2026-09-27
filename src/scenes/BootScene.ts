@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { DIFFICULTIES, MODES, type Difficulty, type Mode } from '../config';
 import { generateGemTextures, generateUtilityTextures } from '../gfx/gems';
+import { front } from '../ui/front';
 
 /** How long the boot splash shows, at least, before the menu (ms since the page started). */
 const SPLASH_MS = 1500;
@@ -24,12 +25,13 @@ export default class BootScene extends Phaser.Scene {
       ? Promise.all([
           document.fonts.load('700 32px Fredoka'),
           document.fonts.load('700 86px "Cinzel Decorative"'),
-          document.fonts.load('400 22px Cinzel'),
+          document.fonts.load('700 16px Cinzel'),
+          document.fonts.load('800 16px Nunito'),
         ])
       : Promise.resolve();
     const cap = wait(2500);
     // The splash is the entry screen: it stays up for at least SPLASH_MS from page load, then
-    // fades into the menu.
+    // the menu grows out of it (src/ui/front.ts).
     const splash = wait(Math.max(0, SPLASH_MS - performance.now()));
     void Promise.all([Promise.race([fontsReady, cap]).catch(() => undefined), splash]).then(() =>
       this.handOff(),
@@ -37,12 +39,6 @@ export default class BootScene extends Phaser.Scene {
   }
 
   private handOff(): void {
-    // Fade the HTML splash out as the menu starts under it (600 ms, see #boot in index.html).
-    const boot = document.getElementById('boot');
-    if (boot) {
-      boot.classList.add('done');
-      window.setTimeout(() => boot.remove(), 700);
-    }
 
     // Deep link: index.html?auto=1&mode=timed&difficulty=hard skips the menu.
     const params = new URLSearchParams(window.location.search);
@@ -50,6 +46,7 @@ export default class BootScene extends Phaser.Scene {
     const difficulty = params.get('difficulty') as Difficulty | null;
 
     if (params.get('auto') === '1' && mode && difficulty && mode in MODES && difficulty in DIFFICULTIES) {
+      front.hide();
       this.scene.start('game', { mode, difficulty });
       return;
     }

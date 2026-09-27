@@ -94,30 +94,46 @@
       touch-action: none;
     }
 
-    #boot {
+    /*
+     * The front screen: the splash, then the menu, on one page (src/ui/front.ts drives it).
+     * The look follows the Figma splash design: lettered-gem logo over falling gems, mode cards,
+     * difficulty chips and a PLAY NOW button. Pure CSS plus a tiny inline script, so the splash
+     * paints before the game bundle loads. Fonts are bundled (see src/main.ts); no network.
+     *
+     *   .splash   logo and falling gems only (first 1.5 s)
+     *   .menu     the menu controls have faded in under the logo
+     *   .hidden   a game is on; the Phaser canvas underneath shows through
+     */
+    #front {
       position: fixed;
       inset: 0;
-      display: grid;
-      place-content: center;
-      justify-items: center;
-      gap: 18px;
-      background: radial-gradient(120% 90% at 50% -10%, #2a1a5e 0%, #180f3c 42%, #0b0718 78%);
       z-index: 10;
-      transition: opacity 600ms ease;
+      overflow-x: hidden;
+      overflow-y: auto;
+      background: #06030f;
+      color: #e8e6ff;
+      font-family: Nunito, system-ui, sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
+      transition: opacity 400ms ease;
+    }
+    #front.hidden { opacity: 0; pointer-events: none; }
+    #front.gone { display: none; }
+
+    #front .glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 72% 60% at 50% 52%, #1c0840 0%, transparent 68%),
+        radial-gradient(ellipse 38% 30% at 18% 78%, rgba(90, 10, 255, 0.12) 0%, transparent 65%),
+        radial-gradient(ellipse 28% 22% at 82% 18%, rgba(0, 100, 255, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 22% 18% at 60% 88%, rgba(255, 10, 60, 0.07) 0%, transparent 60%);
     }
 
-    /* After the splash has shown for 1.5 s, it fades out as the menu takes its place, the logo
-       swelling slightly as it goes (BootScene adds .done). */
-    #boot.done { opacity: 0; pointer-events: none; }
-    #boot .logo { transition: transform 600ms ease; }
-    #boot.done .logo { transform: scale(1.06); }
-
-    /* Boot splash: lettered gem logo over a field of falling gems. Pure CSS, no network. */
-    #boot .fall { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-
-    #boot .fall i {
+    #front .fall { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+    #front .fall i {
       position: absolute;
-      top: -60px;
       display: block;
       animation: gem-fall linear infinite;
     }
@@ -133,75 +149,243 @@
     .gem.octagon  { clip-path: polygon(29% 0%, 71% 0%, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0% 71%, 0% 29%); }
     .gem.marquise { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
 
-    #boot .logo {
+    #front main {
       position: relative;
-      display: grid;
-      justify-items: center;
+      z-index: 1;
+      box-sizing: border-box;
+      min-height: 100%;
+      width: 100%;
+      max-width: 32rem;
+      margin: 0 auto;
+      padding: calc(40px + env(safe-area-inset-top, 0px)) 24px calc(40px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      text-align: center;
+    }
+
+    /* The logo-wrap carries the glide from the splash position; the logo inside floats. */
+    #front .logo-wrap { will-change: transform; }
+    #front .logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       gap: 12px;
       animation: float-y 3.6s ease-in-out infinite;
+      cursor: default;
     }
+    #front .logo.tap { animation: logo-tap 90ms ease-out; }
 
-    #boot .gems {
-      display: flex;
-      align-items: flex-end;
-      gap: clamp(4px, 1.4vw, 10px);
-    }
-
-    #boot .gems span {
+    #front .gems { display: flex; align-items: flex-end; gap: clamp(4px, 1.4vw, 10px); }
+    #front .gems span {
       display: block;
       filter: drop-shadow(0 0 7px var(--glow));
       animation: gem-pulse 2.6s ease-in-out infinite;
       animation-delay: calc(var(--i) * 0.22s);
     }
+    #front .gems .gem { width: 28px; height: 28px; }
 
-    #boot .gems .gem { width: clamp(20px, 5.4vw, 28px); height: clamp(20px, 5.4vw, 28px); }
-
-    #boot h1 {
+    #front h1 {
       margin: 0;
       display: flex;
+      align-items: baseline;
+      gap: 0.01em;
       font-family: "Cinzel Decorative", Georgia, serif;
       font-size: clamp(2.6rem, 8.8vw, 5.4rem);
       font-weight: 700;
       line-height: 1;
     }
-
-    #boot h1 span {
+    #front h1 span {
+      display: inline-block;
       color: var(--c);
       text-shadow: 0 0 18px color-mix(in srgb, var(--c) 53%, transparent), 0 0 38px color-mix(in srgb, var(--c) 27%, transparent);
     }
 
-    #boot .sub {
+    #front .titles { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 4px; }
+    #front .sub {
       margin: 0;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: Cinzel, Georgia, serif;
       font-size: clamp(0.7rem, 2.4vw, 1rem);
       letter-spacing: 0.44em;
       text-transform: uppercase;
       color: rgba(190, 165, 255, 0.72);
     }
-
-    #boot .tag {
+    #front .tag {
       margin: 0;
       font-size: 0.7rem;
       letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: rgba(140, 120, 190, 0.5);
+      color: rgba(140, 120, 190, 0.42);
+    }
+    /* The private voice's tagline (see docs/DEVELOPING.md). */
+    #front .tag.moopit { color: #a5b4fc; }
+
+    /* Menu controls: absent on the splash, then fade up one after another. */
+    #front .ui { display: contents; }
+    #front.splash .ui > * { display: none; }
+    #front .ui > * { animation: ui-in 520ms ease both; animation-delay: calc(var(--n, 0) * 70ms + 120ms); }
+    #front.settled .ui > * { animation: none; }
+
+    #front .divider {
+      width: 16rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(140, 80, 255, 0.28), transparent);
     }
 
-    /* Hidden unless loading runs past the splash's 1.5 s (the inline script adds .slow). */
-    #boot .loading {
+    #front button {
       position: relative;
-      opacity: 0;
-      transition: opacity 400ms ease;
+      margin: 0;
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #front button:focus-visible { box-shadow: 0 0 0 2px rgba(210, 175, 255, 0.7); }
+    /* Small chips keep the design's size but get a finger-sized tap area around them. */
+    #front .chip::before { content: ""; position: absolute; inset: -12px -4px; }
+
+    #front .modes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    #front .mode {
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-width: 94px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: all 200ms ease;
+    }
+    #front .mode[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--c) 9.4%, transparent);
+      border-color: color-mix(in srgb, var(--c) 33%, transparent);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--c) 16.5%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    #front .mode .icon { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--c) 27%, transparent)); }
+    #front .mode[aria-pressed="true"] .icon { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c) 67%, transparent)); }
+    #front .mode .gem { width: 22px; height: 22px; }
+    #front .mode .label {
+      font-weight: 800;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(155, 135, 200, 0.48);
+    }
+    #front .mode[aria-pressed="true"] .label { color: var(--c); }
+    #front .mode .desc { font-size: 0.63rem; color: rgba(130, 110, 180, 0.38); }
+
+    #front .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    #front .chip {
+      padding: 5px 16px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(130, 110, 175, 0.36);
+      transition: all 150ms ease;
+    }
+    #front .chip[aria-pressed="true"] {
+      background: rgba(140, 60, 255, 0.2);
+      border-color: rgba(150, 80, 255, 0.42);
+      color: rgba(210, 175, 255, 0.9);
+    }
+
+    #front .play {
+      overflow: hidden;
+      padding: 15px 60px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #8822ff 0%, #4422ee 50%, #1155ee 100%);
+      border: 1px solid rgba(185, 135, 255, 0.22);
+      animation: ui-in 520ms ease both, cta-glow 2.8s ease-in-out infinite;
+      animation-delay: calc(var(--n, 0) * 70ms + 120ms), 0s;
+    }
+    #front.settled .play { animation: cta-glow 2.8s ease-in-out infinite; }
+    #front .play::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 200ms ease;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 60%);
+    }
+    #front .play:hover::after, #front .play:active::after { opacity: 1; }
+    #front .play span {
+      position: relative;
+      font-family: Cinzel, Georgia, serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 0 14px rgba(255, 255, 255, 0.55);
+    }
+
+    /* Extras the design doesn't show, kept quiet in its style. */
+    #front .resume {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 10px 34px;
+      border-radius: 14px;
+      border: 1px solid rgba(185, 135, 255, 0.3);
+      background: rgba(140, 60, 255, 0.08);
+    }
+    #front .resume b {
+      font-family: Cinzel, Georgia, serif;
+      font-size: 0.74rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(215, 185, 255, 0.9);
+    }
+    #front .resume small { font-size: 0.62rem; letter-spacing: 0.08em; color: rgba(150, 130, 200, 0.6); }
+    #front .best {
+      margin: 0;
+      font-size: 0.64rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(160, 140, 210, 0.55);
+    }
+    #front .settings .chip { font-size: 0.6rem; padding: 5px 12px; }
+    #front .foot {
+      margin: 0;
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(120, 100, 160, 0.4);
+    }
+    #front .buzz-status { min-height: 1em; margin: -16px 0 0; font-size: 0.6rem; color: rgba(180, 160, 230, 0.7); }
+
+    /* Hidden unless loading runs past the splash's 1.5 s (the inline script adds .slow). */
+    #front .loading {
+      display: none;
       align-items: center;
       gap: 12px;
-      margin-top: 10px;
+      opacity: 0;
+      transition: opacity 400ms ease;
       font-size: 12px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: #a5a2d8;
     }
-    #boot.slow .loading { opacity: 1; }
+    #front.splash .loading { display: flex; }
+    #front.splash.slow .loading { opacity: 1; }
+
+    #front .flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: rgb(129, 140, 248);
+      opacity: 0;
+    }
+    #front .flash.on { animation: flash 220ms ease-out; }
 
     .spinner {
       width: 22px;
@@ -219,62 +403,101 @@
     }
     @keyframes gem-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
     @keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
-
+    @keyframes cta-glow {
+      0%, 100% { box-shadow: 0 0 32px rgba(110, 20, 255, 0.5), 0 6px 22px rgba(0, 0, 0, 0.65); }
+      50%      { box-shadow: 0 0 56px rgba(110, 20, 255, 0.8), 0 6px 22px rgba(0, 0, 0, 0.65); }
+    }
+    @keyframes ui-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes logo-tap { from { transform: scale(0.94); } to { transform: scale(1); } }
+    @keyframes flash { from { opacity: 0.45; } to { opacity: 0; } }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* A phone on its side: logo on the left, the controls stacked on the right, so PLAY NOW
+       is on screen without scrolling. */
+    @media (orientation: landscape) and (max-height: 540px) {
+      #front main {
+        max-width: none;
+        flex-direction: row;
+        justify-content: center;
+        gap: clamp(24px, 6vw, 72px);
+        padding: 16px calc(24px + env(safe-area-inset-right, 0px)) 16px calc(24px + env(safe-area-inset-left, 0px));
+      }
+      #front.menu .ui { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+      #front .ui .divider { display: none; }
+      #front.menu h1 { font-size: clamp(2.2rem, 7vh, 3.2rem); }
+      #front .mode { padding: 10px 16px; gap: 5px; }
+      #front .buzz-status { margin-top: -8px; }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       body::before { animation: none; }
       .spinner { animation-duration: 2.4s; }
-      #boot .fall i, #boot .gems span, #boot .logo { animation: none; }
+      #front .fall i, #front .gems span, #front .logo, #front .play, #front .ui > * { animation: none; }
     }
   </style>
 </head>
 <body>
   <div id="game"></div>
 
-  <div id="boot">
-    <div class="fall" id="boot-fall" aria-hidden="true"></div>
-    <div class="logo">
-      <div class="gems" aria-hidden="true">
-        <span style="--i:0;--glow:#22ee6699"><i class="gem shield"   style="--top:#44ee77;--base:#11bb44"></i></span>
-        <span style="--i:1;--glow:#ff336699"><i class="gem diamond"  style="--top:#ff6688;--base:#ee0033"></i></span>
-        <span style="--i:2;--glow:#3377ff99"><i class="gem hex"      style="--top:#5599ff;--base:#1155ff"></i></span>
-        <span style="--i:3;--glow:#ffbb1199"><i class="gem octagon"  style="--top:#ffcc44;--base:#ffaa00"></i></span>
-        <span style="--i:4;--glow:#bb44ff99"><i class="gem kite"     style="--top:#cc77ff;--base:#9911ff"></i></span>
-        <span style="--i:5;--glow:#11ddff99"><i class="gem marquise" style="--top:#55eeff;--base:#00ccff"></i></span>
-        <span style="--i:6;--glow:#ff551199"><i class="gem diamond"  style="--top:#ff8866;--base:#ff4400"></i></span>
+  <!-- Splash, then menu: see #front in the styles above and src/ui/front.ts. -->
+  <div id="front" class="splash">
+    <div class="glow" aria-hidden="true"></div>
+    <div class="fall" id="front-fall" aria-hidden="true"></div>
+    <div class="flash" aria-hidden="true"></div>
+    <main>
+      <div class="logo-wrap">
+        <div class="logo" id="front-logo">
+          <div class="gems" aria-hidden="true">
+            <span style="--i:0;--glow:#22ee6699"><i class="gem shield"   style="--top:#44ee77;--base:#11bb44"></i></span>
+            <span style="--i:1;--glow:#ff336699"><i class="gem diamond"  style="--top:#ff6688;--base:#ee0033"></i></span>
+            <span style="--i:2;--glow:#3377ff99"><i class="gem hex"      style="--top:#5599ff;--base:#1155ff"></i></span>
+            <span style="--i:3;--glow:#ffbb1199"><i class="gem octagon"  style="--top:#ffcc44;--base:#ffaa00"></i></span>
+            <span style="--i:4;--glow:#bb44ff99"><i class="gem kite"     style="--top:#cc77ff;--base:#9911ff"></i></span>
+            <span style="--i:5;--glow:#11ddff99"><i class="gem marquise" style="--top:#55eeff;--base:#00ccff"></i></span>
+            <span style="--i:6;--glow:#ff551199"><i class="gem diamond"  style="--top:#ff8866;--base:#ff4400"></i></span>
+          </div>
+          <h1 aria-label="Gemfall">
+            <span style="--c:#22ee66">G</span><span style="--c:#ff3366">E</span><span style="--c:#3377ff">M</span><span style="--c:#ffbb11">F</span><span style="--c:#bb44ff">A</span><span style="--c:#11ddff">L</span><span style="--c:#ff5511">L</span>
+          </h1>
+          <div class="titles">
+            <p class="sub">of the Moopit</p>
+            <p class="tag" id="front-tag">Match · Chain · Explode</p>
+          </div>
+        </div>
       </div>
-      <h1 aria-label="Gemfall">
-        <span style="--c:#22ee66">G</span><span style="--c:#ff3366">E</span><span style="--c:#3377ff">M</span><span style="--c:#ffbb11">F</span><span style="--c:#bb44ff">A</span><span style="--c:#11ddff">L</span><span style="--c:#ff5511">L</span>
-      </h1>
-      <p class="sub">of the Moopit</p>
-      <p class="tag">Match · Chain · Explode</p>
-    </div>
-    <div class="loading"><div class="spinner"></div><span>Loading gems…</span></div>
+
+      <div class="loading"><div class="spinner"></div><span>Loading gems…</span></div>
+
+      <!-- Filled in by src/ui/front.ts once the game has loaded. -->
+      <div class="ui" id="front-ui"></div>
+    </main>
   </div>
 
   <script>
-    // Background gems for the boot splash. Runs inline so the splash paints before the game bundle loads.
     // Still loading once the splash's 1.5 s are up: show the quiet "Loading gems…" line.
     setTimeout(function () {
-      var boot = document.getElementById('boot');
-      if (boot && !boot.classList.contains('done')) boot.classList.add('slow');
+      var front = document.getElementById('front');
+      if (front && front.classList.contains('splash')) front.classList.add('slow');
     }, 1500);
 
+    // Falling gems behind the splash and menu. Inline, so they paint before the bundle loads.
     (function () {
-      var host = document.getElementById('boot-fall');
+      var host = document.getElementById('front-fall');
       if (!host) return;
       var kinds = [
-        ['shield', '#44ee77', '#11bb44'], ['diamond', '#ff6688', '#ee0033'], ['hex', '#5599ff', '#1155ff'],
-        ['octagon', '#ffcc44', '#ffaa00'], ['kite', '#cc77ff', '#9911ff'], ['marquise', '#55eeff', '#00ccff'],
-        ['diamond', '#ff8866', '#ff4400']
+        ['shield', '#44ee77', '#11bb44', '#00aa3355'], ['diamond', '#ff6688', '#ee0033', '#ff003355'],
+        ['hex', '#5599ff', '#1155ff', '#0044ff55'], ['kite', '#cc77ff', '#9911ff', '#8800ee55'],
+        ['octagon', '#ffcc44', '#ffaa00', '#ff880055'], ['marquise', '#55eeff', '#00ccff', '#00aacc55'],
+        ['diamond', '#ff8866', '#ff4400', '#dd330055']
       ];
       for (var n = 0; n < 28; n++) {
         var k = kinds[n % kinds.length];
         var size = 15 + Math.random() * 28;
         var wrap = document.createElement('i');
         wrap.style.left = ((n * 3.6 + Math.random() * 3.5) % 101) + '%';
+        wrap.style.top = -(size + 24) + 'px';
         wrap.style.opacity = String(0.08 + Math.random() * 0.22);
+        wrap.style.filter = 'drop-shadow(0 0 ' + Math.round(size * 0.35) + 'px ' + k[3] + ')';
         wrap.style.animationDuration = (7 + Math.random() * 10) + 's';
         wrap.style.animationDelay = '-' + (Math.random() * 17) + 's';
         var gem = document.createElement('b');

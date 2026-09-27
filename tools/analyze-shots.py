@@ -13,7 +13,6 @@ from __future__ import annotations
 import colorsys
 import json
 import sys
-from collections import Counter
 from pathlib import Path
 
 from PIL import Image
@@ -56,85 +55,87 @@ class Frame:
         n = len(pts) or 1
         return tuple(sum(p[i] for p in pts) // n for i in range(3))
 
-    def pill_spans(self, gy: float, boxes: list[dict], band: int = 10):
-        """The drawn extent of each pill along a game-space row, tolerant of text inside it.
 
-        Each pill's fill is sampled just inside its own left edge, on the centre line, where
-        no label, sub-label or icon is drawn (a selected pill can carry its own colour wash, so
-        one fill for the whole row doesn't hold). From the box's
-        centre, the span grows sideways while columns still show that fill somewhere in a
-        small vertical band, which bridges the label glyphs; a run of more than 3 columns
-        without it ends the span, so neighbouring pills never merge through their gap.
-        """
-        _, cy = self.to_px(0, gy)
-        w, h = self.img.size
-        ys = [y for y in range(max(0, cy - band), min(h, cy + band + 1))]
+def lit(c, sat: float = 0.45, val: float = 0.45) -> bool:
+    """A vivid pixel: a gem, or a highlighted label. The dim menu text and the faint falling
+    gems behind the cards stay under these thresholds."""
+    _, s, v = colorsys.rgb_to_hsv(c[0] / 255, c[1] / 255, c[2] / 255)
+    return s >= sat and v >= val
 
-        fills, spans = [], []
-        for box in boxes:
-            x0, _ = self.to_px(box["left"], gy)
-            x1, _ = self.to_px(box["right"], gy)
-            fill = self.patch(box["left"] + 14, gy, r=3)
-            has_fill = lambda x: any(dist(self.px[x, y], fill) <= 18 for y in ys)
 
-            mid = (x0 + x1) // 2
-            left = right = mid
-            miss = 0
-            for x in range(mid, -1, -1):
-                if has_fill(x):
-                    left, miss = x, 0
-                elif (miss := miss + 1) > 3:
-                    break
-            miss = 0
-            for x in range(mid, w):
-                if has_fill(x):
-                    right, miss = x, 0
-                elif (miss := miss + 1) > 3:
-                    break
-            fills.append(fill)
-            spans.append([left, right])
-        return fills, spans
+def bright(c, val: float = 0.6) -> bool:
+    return max(c) / 255 >= val
+
+
+def count_in(img, dpr: float, box: dict, y0: float, y1: float, test) -> int:
+    """Pixels passing `test` in a horizontal band of a page-space box (fractions of its height)."""
+    px = img.load()
+    w, h = img.size
+    left, right = int(box["left"] * dpr) + 2, int(box["right"] * dpr) - 2
+    top = int((box["top"] + (box["bottom"] - box["top"]) * y0) * dpr)
+    bottom = int((box["top"] + (box["bottom"] - box["top"]) * y1) * dpr)
+    return sum(
+        1
+        for x in range(max(0, left), min(w, right))
+        for y in range(max(0, top), min(h, bottom))
+        if test(px[x, y])
+    )
 
 
 def check_menu(d: Path, geo: dict) -> bool:
+    """The HTML menu (src/ui/front.ts), from the page-space button boxes playtest recorded.
+
+    Playtest already proves the boxes don't overlap and taps land. This proves the screen
+    shows it: every mode card draws its gem, and only the selected card's label and the
+    selected difficulty chip are lit, so the highlight on screen matches the state.
+    """
     path = d / "menu.png"
     img = Image.open(path).convert("RGB")
-    fr = Frame(img, geo["canvas"])
-    print(f"\n=== {path.name} {img.size} ===")
-    print(f"canvas: left={geo['canvas']['left']:.1f} top={geo['canvas']['top']:.1f} "
-          f"w={geo['canvas']['w']:.1f} h={geo['canvas']['h']:.1f} dpr={fr.dpr}")
-    print(f"scale: {fr.sw:.4f}x{fr.sh:.4f}")
+    dpr = geo["canvas"].get("dpr") or 1
+    menu = geo.get("menu") or {}
+    print(f"\n=== {path.name} {img.size} (HTML menu, dpr={dpr}) ===")
 
     ok = True
-    for group in ("mode", "difficulty"):
-        row = geo["menu"].get(group)
-        if not row:
-            continue
-        # All pills in a picker row share a centre line; take it from the audit.
-        gy = row["boxes"][0]["cy"]
-        fills, spans = fr.pill_spans(gy, row["boxes"])
-        spans_game = [
-            (round((a / fr.dpr - fr.left) / fr.sw), round((b / fr.dpr - fr.left) / fr.sw))
-            for a, b in spans
-        ]
-        expected = [(round(b["left"]), round(b["right"])) for b in row["boxes"]]
-        shown = " ".join(f"#{c[0]:02x}{c[1]:02x}{c[2]:02x}" for c in fills)
-        print(f"{group}: fills={shown} expected={expected} visible={spans_game}")
-
-        if len(spans_game) != len(expected):
-            print(f"  FAIL: {len(expected)} pills declared but {len(spans_game)} visible")
+    modes = (menu.get("mode") or {}).get("boxes") or []
+    if len(modes) != 3:
+        print(f"  FAIL: expected 3 mode cards, geometry has {len(modes)}")
+        return False
+    for b in modes:
+        gem = count_in(img, dpr, b, 0.1, 0.45, lit)
+        label = count_in(img, dpr, b, 0.45, 0.72, lit)
+        state = "selected" if b["selected"] else "not selected"
+        print(f"mode {b['name']:8} {state:13} gem px={gem:4} lit label px={label:4}")
+        if gem < 25:
+            print(f"  FAIL: the '{b['name']}' card shows no gem")
             ok = False
-            continue
-
-        gaps = [spans_game[i + 1][0] - spans_game[i][1] for i in range(len(spans_game) - 1)]
-        print(f"  visible gaps: {gaps}px (declared menu gaps: {row['gaps']})")
-        if min(gaps) < 8:
-            print("  FAIL: pills render as one blob (overlap)")
+        # A lit label is hundreds of pixels; a falling gem or a glow drifting behind the card
+        # can add a few dozen, so the line sits well clear of both.
+        if b["selected"] and label < 100:
+            print(f"  FAIL: the selected '{b['name']}' card's label isn't lit")
             ok = False
-        for (a, b), (ea, eb) in zip(spans_game, expected):
-            if abs(a - ea) > 12 or abs(b - eb) > 12:
-                print(f"  FAIL: drawn pill [{a},{b}] is not aligned with its hit box [{ea},{eb}]")
-                ok = False
+        if not b["selected"] and label >= 100:
+            print(f"  FAIL: the '{b['name']}' card looks selected but isn't")
+            ok = False
+
+    chips = (menu.get("difficulty") or {}).get("boxes") or []
+    if len(chips) != 3:
+        print(f"  FAIL: expected 3 difficulty chips, geometry has {len(chips)}")
+        return False
+    for b in chips:
+        text = count_in(img, dpr, b, 0.2, 0.8, bright)
+        state = "selected" if b["selected"] else "not selected"
+        print(f"difficulty {b['name']:6} {state:13} bright text px={text:4}")
+        if b["selected"] and text < 20:
+            print(f"  FAIL: the selected '{b['name']}' chip isn't lit")
+            ok = False
+        if not b["selected"] and text >= 20:
+            print(f"  FAIL: the '{b['name']}' chip looks selected but isn't")
+            ok = False
+
+    play = ((menu.get("play") or {}).get("boxes") or [None])[0]
+    if not play or count_in(img, dpr, play, 0.25, 0.75, bright) < 40:
+        print("  FAIL: PLAY NOW isn't drawn")
+        ok = False
     return ok
 
 

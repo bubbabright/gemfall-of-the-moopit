@@ -56,7 +56,7 @@ export interface Voice {
 
 /** The wording every player sees. Byte-for-byte what the game shipped with. */
 const plain: Voice = {
-  menuTagline: 'match 3 · cascades · power gems',
+  menuTagline: 'Match · Chain · Explode',
   comboTiers: [[], [], [], [], []],
   toast: {
     endlessStart: (shuffles) => `Endless · ${shuffles} shuffles`,
