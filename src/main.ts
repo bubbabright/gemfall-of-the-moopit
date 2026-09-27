@@ -30,6 +30,23 @@ const game = new Phaser.Game({
   scene: [BootScene, MenuScene, GameScene],
 });
 
+declare const __SERVICE_WORKER__: boolean;
+
+// Installable app: the service worker (dist/sw.js, built from src/sw.template.js) saves the
+// game's files so it opens offline. Built game only, and not on this PC's own previews
+// (localhost) unless the URL asks with ?sw, so a local preview never serves a saved old build;
+// `npm run pwa` uses ?sw. Browsers only allow it on https or localhost, so a plain-http LAN
+// preview skips it too.
+const localPreview = ['localhost', '127.0.0.1'].includes(location.hostname);
+const wantServiceWorker = !localPreview || new URLSearchParams(location.search).has('sw');
+if (__SERVICE_WORKER__ && wantServiceWorker && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err: unknown) => {
+      console.warn('service worker not registered:', err);
+    });
+  });
+}
+
 // Debug handle: lets devtools (and the headless playtest) inspect or step the loop,
 // and read which build is running.
 const debug = window as unknown as {

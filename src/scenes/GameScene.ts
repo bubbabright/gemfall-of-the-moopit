@@ -44,6 +44,7 @@ import { gemTextureKey } from '../gfx/gems';
 import { sfx } from '../audio/sfx';
 import { haptics } from '../haptics';
 import { Pill, tweenPromise } from '../ui/pill';
+import { wakeLock } from '../wakeLock';
 import type { Cell, Grid, Move, Pos } from '../core/types';
 import {
   BOARD_AREA_H,
@@ -242,6 +243,7 @@ export default class GameScene extends Phaser.Scene {
     this.ready = true;
     // Rebuilt after the phone turned while paused: stay paused.
     if (this.carry?.paused) this.togglePause(true);
+    wakeLock.hold(!this.paused);
 
     if (this.mode === 'endless' && !saved) {
       this.showToast(this.voice.toast.endlessStart(MODE_RULES.endlessShuffles), '#c7d2fe');
@@ -971,6 +973,7 @@ export default class GameScene extends Phaser.Scene {
     window.addEventListener('blur', onHide);
     document.addEventListener('visibilitychange', onVisibility);
     this.events.once('shutdown', () => {
+      wakeLock.hold(false);
       window.removeEventListener('blur', onHide);
       document.removeEventListener('visibilitychange', onVisibility);
     });
@@ -1275,7 +1278,7 @@ export default class GameScene extends Phaser.Scene {
           ease: 'Quad.easeIn',
           // tweenPromise owns onComplete, so hook the flash on start instead.
           onStart: () => {
-            sprite.setTintFill(0xffffff);
+            sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
             buzz();
           },
         }),
@@ -1567,6 +1570,7 @@ export default class GameScene extends Phaser.Scene {
     if (next === this.paused) return;
 
     this.paused = next;
+    wakeLock.hold(!this.paused);
 
     if (this.paused) {
       this.clearIntroFade();
@@ -1714,6 +1718,7 @@ export default class GameScene extends Phaser.Scene {
   private async endRun(reason: string): Promise<void> {
     if (this.over) return;
     this.over = true;
+    wakeLock.hold(false);
     this.busy = true;
     this.clearHint();
     this.hintTimer?.remove();

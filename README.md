@@ -4,7 +4,8 @@ A match-3 gem game I made for fun. Swap gems, set off chain reactions, blow stuf
 
 ### ▶ Play it: **<https://gemfall.moopit.fun>**
 
-It runs in your browser on a phone, tablet or computer. No install, no account, no ads.
+It runs in your browser on a phone, tablet or computer. No account, no ads, and nothing to
+install, though you can add it to your home screen like an app (see below).
 
 ![GEMFALL in the middle of a game](docs/img/gemfall.png)
 
@@ -63,6 +64,17 @@ matches rarer. Every mode and difficulty keeps its own high score.
 - **Sound** is made by the game as you play (there are no audio files). The **SOUND** button
   turns it off.
 
+## Put it on your home screen
+
+On Android, open the game in **Chrome**, tap the **⋮** menu, then **Add to Home screen** (or
+**Install app**). You get a GEMFALL icon, and the game opens full screen with no browser bar.
+Once you've played it, it also works with no signal.
+The screen stays on while you're playing.
+
+Use Chrome for this: Firefox on Android can't make the phone buzz.
+
+When there's a new version, it shows up the next time you open the game with a connection.
+
 ## Known issues
 
 - **Phone buzz isn't working yet** on some Android phones, even in Chrome. I'm looking into it.
@@ -79,7 +91,7 @@ exactly which version you have, so include it along with what phone or browser y
 
 Everything here is original: the gems, board, buttons and sounds are all drawn and generated
 by code, and no art or code comes from the real Bejeweled. It's built with
-[Phaser 3](https://phaser.io), [Vite](https://vite.dev) and TypeScript.
+[Phaser 4](https://phaser.io), [Vite](https://vite.dev) and TypeScript.
 
 | If you want to… | Read |
 |---|---|

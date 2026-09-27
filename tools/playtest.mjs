@@ -442,6 +442,10 @@ for (let attempt = 0; attempt < 10; attempt++) {
   let busyFrames = 0;
   for (let i = 0; i < 120; i++) {
     await pump(6);
+    // Tweens run on the wall clock (TweenManager uses Date.now()), not on pumped frames, so
+    // let about 6 frames' worth of real time pass too. Without it a fast machine pumps
+    // faster than the tweens can move and a move never finishes.
+    await sleep(100);
     busyFrames += 6;
     const state = await sceneState();
     if (!state.busy) break;
@@ -499,7 +503,8 @@ const spriteAudit = await evaluate(`
     });
     const orphans = gems.filter((o) => !owned.has(o));
     const faded = gems.filter((o) => owned.has(o) && o.alpha < 0.99);
-    const tinted = gems.filter((o) => o.tintFill);
+    // Phaser 3 flagged a white-flashed sprite with tintFill; Phaser 4 uses tintMode (1 = FILL).
+    const tinted = gems.filter((o) => o.tintFill || o.tintMode === 1);
     return {
       tracked: owned.size,
       gems: gems.length,

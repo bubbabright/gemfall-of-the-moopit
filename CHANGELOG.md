@@ -4,6 +4,12 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 ## Not live yet
 
+- You can add GEMFALL to your phone's home screen. It gets its own gem icon, opens full screen
+  without the browser bar, and works with no signal once you've played it. The screen stays on
+  while you play. How-to is in the
+  [README](README.md#put-it-on-your-home-screen).
+- Under the hood, the game now runs on Phaser 4, a newer version of the engine it's built on.
+  It should look and play the same.
 - The version line at the bottom of the menu now also shows the release name and when it was
   built (Eastern time).
 - On a phone held upright, the game now fills the whole screen instead of sitting in a box in

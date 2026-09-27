@@ -28,10 +28,10 @@ const polygon = (
   radius: number,
   sides: number,
   rotation = -Math.PI / 2,
-): Phaser.Types.Math.Vector2Like[] =>
+): Phaser.Math.Vector2[] =>
   Array.from({ length: sides }, (_, i) => {
     const angle = rotation + (i * Math.PI * 2) / sides;
-    return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
+    return new Phaser.Math.Vector2(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
   });
 
 const starPoints = (
@@ -41,11 +41,11 @@ const starPoints = (
   inner: number,
   points = 4,
   rotation = -Math.PI / 2,
-): Phaser.Types.Math.Vector2Like[] =>
+): Phaser.Math.Vector2[] =>
   Array.from({ length: points * 2 }, (_, i) => {
     const angle = rotation + (i * Math.PI) / points;
     const radius = i % 2 === 0 ? outer : inner;
-    return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
+    return new Phaser.Math.Vector2(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
   });
 
 function fillShape(
@@ -200,10 +200,13 @@ function drawHypercube(g: Phaser.GameObjects.Graphics): void {
     g.fillStyle(color, 1);
     g.fillPoints(
       [
-        { x: CENTER, y: CENTER },
-        { x: CENTER + Math.cos(a0) * outer, y: CENTER + Math.sin(a0) * outer },
-        { x: CENTER + Math.cos((a0 + a1) / 2) * outer * 1.04, y: CENTER + Math.sin((a0 + a1) / 2) * outer * 1.04 },
-        { x: CENTER + Math.cos(a1) * outer, y: CENTER + Math.sin(a1) * outer },
+        new Phaser.Math.Vector2(CENTER, CENTER),
+        new Phaser.Math.Vector2(CENTER + Math.cos(a0) * outer, CENTER + Math.sin(a0) * outer),
+        new Phaser.Math.Vector2(
+          CENTER + Math.cos((a0 + a1) / 2) * outer * 1.04,
+          CENTER + Math.sin((a0 + a1) / 2) * outer * 1.04,
+        ),
+        new Phaser.Math.Vector2(CENTER + Math.cos(a1) * outer, CENTER + Math.sin(a1) * outer),
       ],
       true,
     );

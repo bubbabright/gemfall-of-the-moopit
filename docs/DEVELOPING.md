@@ -7,6 +7,10 @@ game design is in [`bejeweled-spec.md`](../bejeweled-spec.md). The live URL is
 ## Run it
 
 Requires Node 20+ (developed on Node 24). `netlify.toml` pins Node 20 for the Netlify build.
+The engine is Phaser 4.
+
+In a Claude Code on the web session, `.claude/hooks/session-start.sh` sets the container up
+first: `npm install`, a `chromium` command, Pillow and `ss`. It does nothing on a normal PC.
 
 ```bash
 npm install
@@ -30,7 +34,7 @@ stop servers whose working directory is this repo.
 | 4770 | `npm run dev` |
 | 4771 | dev preview: `tools/poc.sh`, `npm run preview`, `npm run gates` |
 | 4772 | the dev server `selftest` starts and stops for itself |
-| 4780–4787 | headless-Chromium debug ports: playtest 4780, probe-input 4781, probe-pointer 4782, probe-hittest 4783, probe-sweep 4784, probe-hittest2 4785, probe-layout 4786, probe-scale 4787 |
+| 4780–4788 | headless-Chromium debug ports: playtest 4780, probe-input 4781, probe-pointer 4782, probe-hittest 4783, probe-sweep 4784, probe-hittest2 4785, probe-layout 4786, probe-scale 4787, pwa-check 4788 |
 
 ### Try it on a phone on the same Wi-Fi
 
@@ -55,7 +59,10 @@ src/
                      window.gemfall and window.gemfallLayout for the test tools
   version.ts         build stamp shown on the menu, plus the internal stamp with codename and
                      build time (see DEPLOYING.md)
+  sw.template.js     the service worker; vite.config.ts fills in the file list at build time
+                     and writes dist/sw.js (see "Installable app")
   haptics.ts         phone vibration (see "Haptics" below)
+  wakeLock.ts        keeps the screen on while a run is being played (see "Installable app")
   messages.ts        every player-facing line, in the default voice and the private one
                      (see "Wording and the private voice" below)
   core/              Phaser-free engine: board, specials, score, storage, types
@@ -64,13 +71,18 @@ src/
   ui/pill.ts         the rounded button used everywhere (read the hit-area note in it)
   gfx/gems.ts        procedural gem and power-gem textures
   audio/sfx.ts       procedural WebAudio sound effects
+public/
+  manifest.webmanifest   name, colours and icons for "Add to Home screen"
+  icons/             home-screen icons, drawn by tools/make-icons.py
 tools/
   selftest.sh        headless engine test runner
   playtest.mjs       browser integration test over the Chrome DevTools Protocol
   analyze-shots.py   offline screenshot checks (Pillow)
   probe-scale.mjs    screen-fit, sharpness, tap and phone-turning test
+  pwa-check.mjs      installable, offline, and every request stays on the game's own site
+  make-icons.py      draws public/icons/ (Pillow); re-run only when the icon changes
   poc.sh             build and serve on the LAN (the dev preview, :4771)
-  gates.sh           npm run gates: fresh build + preview, then all five gates, one verdict
+  gates.sh           npm run gates: fresh build + preview, then all six gates, one verdict
   ship.sh            npm run ship: gates, push, wait until live, stop dev servers
   probe-*.mjs        one-off diagnostics kept for reference; not part of any gate
 ```
@@ -99,6 +111,7 @@ npm run selftest     # engine correctness (headless Chromium)
 npm run playtest     # integration: real clicks on a real build
 npm run visual       # offline pixel checks on the playtest screenshots
 npm run scaling      # the board fits every viewport, including phones
+npm run pwa          # installable, opens offline, no requests off-site (built game only)
 ```
 
 `selftest` starts its own dev server on `:4772` and stops it afterwards; if that port is held by
@@ -149,6 +162,49 @@ fills the screen each time, the run (score and board) carries over and taps stil
 It also guards against an older bug where `#game` sized itself by its own content, so the canvas
 inflated its parent and Phaser never scaled down on phones.
 
+**`pwa`** loads the built game at a phone size in headless Chromium, with a real throwaway
+profile (Chrome never offers to install from incognito, which is headless's default). It checks
+the manifest parses and lists 192, 512 and maskable icons, the service worker takes control after
+a reload, Chrome reports no installability errors, the game boots to its menu with the network
+switched off, and every request the page and worker made went to the game's own origin. Like
+`playtest`, it needs a URL or the dev preview on `:4771`. It also checks that the plain preview
+(no `?sw`) registers no service worker, and that starting a game asks for a screen wake lock.
+
+### Installable app
+
+`index.html` links `public/manifest.webmanifest`, so Chrome on Android offers **Add to Home
+screen** / **Install app**: a gem icon, full screen with no browser bar (`display: standalone`),
+and a `#120b2e` splash that matches the page. There's no orientation lock, so the landscape
+layout still works when installed.
+
+The service worker is `src/sw.template.js`. At build time a small Vite plugin in
+`vite.config.ts` lists every file in `dist/`, names the cache after a hash of their contents,
+and writes `dist/sw.js`. So:
+
+- **Offline:** everything is saved on install, so after one visit the game opens with no signal.
+- **Updates:** the page is fetched network-first, so a new deploy shows up on the next launch
+  with a connection. A new build means a new `sw.js`, which saves the new files and deletes the
+  old copy.
+- **Nothing leaves the device:** the worker only answers requests for the game's own origin,
+  and only fetches the files the page would load anyway.
+- **Only the built game on a real host registers it.** `npm run dev` never does
+  (`__SERVICE_WORKER__`, set in `vite.config.ts`), and neither does a preview on `localhost` or
+  `127.0.0.1` unless the URL has `?sw`, so a local preview never serves a saved old build.
+  Browsers allow service workers only on https or localhost, so the plain-http LAN preview from
+  `tools/poc.sh` skips it too. Test offline on the live site or with `npm run pwa`, which opts in
+  with `?sw`.
+
+**Screen stays on.** `src/wakeLock.ts` asks for a screen wake lock while a run is being played,
+lets go on pause, game over and leaving the game, and asks again when the game comes back to
+the foreground (the browser drops it in the background). Browsers that don't support it or
+refuse just dim as normal. The PWA gate stubs the API, so it proves the game *asked*, not that a
+phone's screen stayed on.
+
+No iPhone-only tags or icons: the players are on Android.
+
+If a phone seems stuck on an old build: open the game once with a connection, close it, and
+open it again.
+
 ### Screen layout
 
 The game world is 720 logical px wide in portrait. Its height follows the screen (900 to
@@ -175,7 +231,9 @@ waits until the player leaves.
 - `window.blur` fires on load in headless. Auto-pause only kicks in once the game is ready and
   the player has interacted, so a headless load doesn't pause itself immediately.
 - Stepping the loop with **no real time between steps** under-drives it: tweens and timers
-  advance too little and a move can look stuck. The playtest mixes in real waits, which is why
+  advance too little and a move can look stuck. The tween manager runs on the wall clock
+  (`Date.now()`), not on the frames you step, so a fast machine can step faster than a tween
+  can move. The playtest mixes in real waits, which is why
   it works. When a probe wedges, suspect the probe before the game, and reproduce the problem in
   `tools/playtest.mjs` before calling it a game bug.
 - A WebGL canvas can't be read back with `drawImage` in headless Chromium, so visual checks work

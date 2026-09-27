@@ -47,7 +47,12 @@ If a phone still shows the old stamp after a deploy, it's a cached page. Reload 
 tab and reopen it.
 
 Caching (`netlify.toml`): hashed files under `/assets/` are cached forever (`immutable`), and
-`index.html` is `must-revalidate`, so a reload always picks up a new build.
+`index.html`, `sw.js` and `manifest.webmanifest` are `must-revalidate`, so a reload always
+picks up a new build.
+
+Installed on a home screen, the game runs through its service worker (see DEVELOPING.md,
+"Installable app"). The page itself is fetched network-first, so a new deploy shows up the next
+time the game opens with a connection; offline it uses the copy saved with the last build.
 
 ## How it's wired
 

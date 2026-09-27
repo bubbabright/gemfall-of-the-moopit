@@ -22,7 +22,7 @@ Any agent, any change. Do the steps in order; never skip 3.
 | Step | Do | What it gives you |
 |---|---|---|
 | 1. Change | Edit the code. | — |
-| 2. Dev + test | `npm run gates` | Rebuilds, (re)starts the dev preview on `:4771`, runs all five gates, prints one PASS/FAIL table. Fix and repeat until `GATES PASS`. |
+| 2. Dev + test | `npm run gates` | Rebuilds, (re)starts the dev preview on `:4771`, runs all six gates, prints one PASS/FAIL table. Fix and repeat until `GATES PASS`. |
 | 3. Review | Give Daniel the LAN URL from `npm run poc status`, and screenshots if the change is visual. | **Wait for Daniel to accept.** No commit, push or ship without his explicit OK in this session. |
 | 4. Commit | Stage only the files for this change (never `git add -A`; the tree may hold other work). Add a CHANGELOG line under **Not live yet**. | A commit on `main`. |
 | 5. Ship | `npm run ship` | Re-runs gates, pushes, waits until the live bundle carries the new commit hash, then stops the dev servers. Prints `LIVE: …`. |

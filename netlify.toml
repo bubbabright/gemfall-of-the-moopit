@@ -16,6 +16,18 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# The service worker and manifest decide which build an installed game runs, so phones must
+# always check them for a new version.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [[headers]]
   for = "/*"
   [headers.values]
