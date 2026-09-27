@@ -19,6 +19,8 @@ import {
 import { expandDetonations, hyperTargets, planSpecials } from './specials';
 import { levelTarget, multiplierForDepth, stepScore } from './score';
 import type { Cell, Grid } from './types';
+import { clearSavedRun, loadSavedRun, saveRun } from './storage';
+import { STORAGE } from '../config';
 
 // ── harness ───────────────────────────────────────────────────────────────────
 
@@ -392,6 +394,50 @@ section('end-to-end cascade simulation', () => {
   // Power gems must survive in the grid rather than being silently overwritten.
   const specialCount = grid.flat().filter((c) => c && c.special !== 'none').length;
   check('power gems can exist on a settled board', specialCount >= 0, `${specialCount} power gems`);
+});
+
+section('saved runs: one per mode and difficulty', () => {
+  // Each mode and difficulty keeps its own unfinished run, so switching modes on the menu can
+  // never bring one run's points into another (the bug: RESUME offered the last run whatever
+  // mode was selected).
+  const keys = Object.keys(window.localStorage).filter((k) => k.startsWith(STORAGE.savedRun));
+  keys.forEach((k) => window.localStorage.removeItem(k));
+
+  const grid = serializeGrid(createGrid(8, 8, 6, mulberry32(7)));
+  const run = (mode: 'endless' | 'timed' | 'moves', score: number) => ({
+    mode,
+    difficulty: 'normal' as const,
+    score,
+    level: 1,
+    levelScore: score,
+    movesLeft: -1,
+    timeLeftMs: -1,
+    shuffles: 0,
+    grid,
+  });
+
+  saveRun(run('endless', 161));
+  check('a saved endless run loads for endless', loadSavedRun('endless', 'normal')?.score === 161);
+  check('it does not load for timed', loadSavedRun('timed', 'normal') === null);
+  check('it does not load for another difficulty', loadSavedRun('endless', 'hard') === null);
+
+  saveRun(run('timed', 90));
+  check('saving a timed run keeps the endless one', loadSavedRun('endless', 'normal')?.score === 161);
+  check('and the timed one loads for timed', loadSavedRun('timed', 'normal')?.score === 90);
+
+  clearSavedRun('timed', 'normal');
+  check('clearing timed leaves endless', loadSavedRun('timed', 'normal') === null && loadSavedRun('endless', 'normal')?.score === 161);
+
+  // A run saved by the old single-slot version still resumes, in its own mode only.
+  keys.forEach((k) => window.localStorage.removeItem(k));
+  window.localStorage.removeItem(`${STORAGE.savedRun}:endless:normal`);
+  window.localStorage.setItem(STORAGE.savedRun, JSON.stringify({ version: 1, savedAt: 1, ...run('moves', 42) }));
+  check('an old single-slot save is not offered to another mode', loadSavedRun('endless', 'normal') === null);
+  check('an old single-slot save resumes in its own mode', loadSavedRun('moves', 'normal')?.score === 42);
+
+  Object.keys(window.localStorage)
+    .filter((k) => k.startsWith(STORAGE.savedRun))
+    .forEach((k) => window.localStorage.removeItem(k));
 });
 
 // ── report ────────────────────────────────────────────────────────────────────

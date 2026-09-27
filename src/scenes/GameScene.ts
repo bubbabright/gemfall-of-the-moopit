@@ -212,7 +212,7 @@ export default class GameScene extends Phaser.Scene {
     // Speaker and gear in the corners, as on the menu; here the gear pauses first.
     showCorners(() => this.openSettingsPanel());
 
-    const saved = this.resumeRequested ? loadSavedRun() : null;
+    const saved = this.resumeRequested ? loadSavedRun(this.mode, this.difficulty) : null;
 
     this.grid = saved
       ? saved.grid
@@ -1725,7 +1725,7 @@ export default class GameScene extends Phaser.Scene {
     this.clock?.remove();
 
     const isBest = submitHighScore(this.mode, this.difficulty, this.score, this.level);
-    clearSavedRun();
+    clearSavedRun(this.mode, this.difficulty);
 
     sfx.gameOver();
     if (isBest) this.time.delayedCall(700, () => sfx.newBest());

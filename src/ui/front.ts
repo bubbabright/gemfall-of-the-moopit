@@ -171,6 +171,25 @@ function select(m: Mode, d: Difficulty): void {
   els.best.textContent = best
     ? `Best · ${MODES[m].label} · ${DIFFICULTIES[d].label} — ${best.score.toLocaleString()}`
     : `No score yet · ${MODES[m].label} · ${DIFFICULTIES[d].label}`;
+  showResume();
+}
+
+/**
+ * RESUME only for the selected mode and difficulty: each keeps its own unfinished run, so
+ * switching cards never offers (or carries over the points of) another game.
+ */
+function showResume(): void {
+  els.resumeSlot.replaceChildren();
+  const saved = loadSavedRun(mode, difficulty);
+  if (!saved) return;
+  const run = { mode: saved.mode, difficulty: saved.difficulty, resume: true };
+  els.resumeSlot.append(
+    button(
+      'resume',
+      [el('b', '', ['Resume run']), el('small', '', [`${saved.score.toLocaleString()} pts so far`])],
+      () => start(run),
+    ),
+  );
 }
 
 function refresh(): void {
@@ -179,24 +198,6 @@ function refresh(): void {
   haptics.enabled = settings.haptics;
   moopit = settings.moopit;
   showTagline();
-
-  els.resumeSlot.replaceChildren();
-  const saved = loadSavedRun();
-  if (saved) {
-    const run = { mode: saved.mode, difficulty: saved.difficulty, resume: true };
-    els.resumeSlot.append(
-      button(
-        'resume',
-        [
-          el('b', '', ['Resume run']),
-          el('small', '', [
-            `${MODES[saved.mode].label} · ${DIFFICULTIES[saved.difficulty].label} · ${saved.score.toLocaleString()} pts`,
-          ]),
-        ],
-        () => start(run),
-      ),
-    );
-  }
   select(mode, difficulty);
 }
 

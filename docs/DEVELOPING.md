@@ -102,8 +102,11 @@ tools/
 | Change a button's look or hit area | `src/ui/pill.ts` |
 | Change what the game says | `src/messages.ts` |
 
-Browser storage keys: `bejeweled.highscores.v1`, `bejeweled.savedrun.v1` and
-`bejeweled.settings.v1`. A corrupt or mismatched value is ignored, never a crash.
+Browser storage keys: `bejeweled.highscores.v1`, `bejeweled.settings.v1`, and one unfinished run
+per mode and difficulty, `bejeweled.savedrun.v1:<mode>:<difficulty>` (the menu offers RESUME
+only for the selected pair). A run saved under the old single key `bejeweled.savedrun.v1` is
+moved into its own slot the first time it's read. A corrupt or mismatched value is ignored,
+never a crash.
 
 ## Check a change
 

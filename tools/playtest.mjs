@@ -783,6 +783,15 @@ if (menuPillAt) {
   else if (picks.mode !== 'moves' || picks.difficulty !== 'normal') {
     problems.push(`menu forgot the run's picks (${picks.mode} / ${picks.difficulty})`);
   }
+  // Each mode keeps its own unfinished run: another mode must not offer this one's RESUME
+  // (it used to, which carried one game's points into another).
+  await tapSelector('#front .mode[data-mode="endless"]');
+  const resumeOnOther = await evaluate(`!!document.querySelector('#front .resume')`);
+  await tapSelector('#front .mode[data-mode="moves"]');
+  const resumeOnOwn = await evaluate(`!!document.querySelector('#front .resume')`);
+  console.log(`resume offered: on endless=${resumeOnOther}, back on moves=${resumeOnOwn}`);
+  if (resumeOnOther) problems.push("Endless offers to resume the Moves run (points would carry over)");
+  if (!resumeOnOwn) problems.push('Moves lost its own RESUME after switching cards');
 } else {
   problems.push('in-game MENU button not found');
 }

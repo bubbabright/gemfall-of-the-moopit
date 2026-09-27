@@ -4,6 +4,9 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 ## Not live yet
 
+- Fixed: going back to the menu, picking another mode and tapping **RESUME RUN** brought back
+  the old game with its points. Each mode and difficulty now keeps its own unfinished game, and
+  RESUME only shows for the one you've picked. **PLAY NOW** always starts from zero.
 - New opening screen: the colorful GEMFALL logo with gems raining behind it. After a moment
   the logo slides up and the menu appears under it: a card with its own gem for each mode,
   small buttons for the difficulty, and a big **PLAY NOW**. The gems keep falling behind.

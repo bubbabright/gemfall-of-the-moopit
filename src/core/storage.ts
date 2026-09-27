@@ -147,15 +147,34 @@ export function submitHighScore(
   return true;
 }
 
-// ── Saved run (resume) ────────────────────────────────────────────────────────
+// ── Saved runs (resume) ───────────────────────────────────────────────────────
+//
+// One unfinished run per mode and difficulty, so picking another mode on the menu can never
+// resume (or show the points of) a different game.
+
+const runKey = (mode: Mode, difficulty: Difficulty): string => `${STORAGE.savedRun}:${mode}:${difficulty}`;
 
 export function saveRun(run: Omit<SavedRun, 'version' | 'savedAt'>): void {
-  write(STORAGE.savedRun, { version: 1, savedAt: Date.now(), ...run } satisfies SavedRun);
+  write(runKey(run.mode, run.difficulty), { version: 1, savedAt: Date.now(), ...run } satisfies SavedRun);
 }
 
-export function loadSavedRun(): (Omit<SavedRun, 'grid' | 'version'> & { grid: Grid }) | null {
-  const stored = read<SavedRun | null>(STORAGE.savedRun, null);
-  if (!stored || stored.version !== 1) return null;
+/** The unfinished run for this mode and difficulty, or null. */
+export function loadSavedRun(
+  mode: Mode,
+  difficulty: Difficulty,
+): (Omit<SavedRun, 'grid' | 'version'> & { grid: Grid }) | null {
+  let stored = read<SavedRun | null>(runKey(mode, difficulty), null);
+
+  // Before per-mode slots there was one save for any mode. Move it into its own slot, so it
+  // resumes in its own mode and nowhere else.
+  const legacy = read<SavedRun | null>(STORAGE.savedRun, null);
+  if (legacy && legacy.version === 1 && legacy.mode && legacy.difficulty) {
+    write(runKey(legacy.mode, legacy.difficulty), legacy);
+    removeKey(STORAGE.savedRun);
+    if (legacy.mode === mode && legacy.difficulty === difficulty) stored = legacy;
+  }
+
+  if (!stored || stored.version !== 1 || stored.mode !== mode || stored.difficulty !== difficulty) return null;
 
   const grid = deserializeGrid(stored.grid);
   if (!grid) return null;
@@ -174,12 +193,14 @@ export function loadSavedRun(): (Omit<SavedRun, 'grid' | 'version'> & { grid: Gr
   };
 }
 
-export const clearSavedRun = (): void => {
+export const clearSavedRun = (mode: Mode, difficulty: Difficulty): void => removeKey(runKey(mode, difficulty));
+
+function removeKey(key: string): void {
   try {
-    window.localStorage.removeItem(STORAGE.savedRun);
+    window.localStorage.removeItem(key);
   } catch {
-    /* ignore */
+    /* private mode — nothing to clear */
   }
-};
+}
 
 export const gridForSave = (grid: Grid): SerializedGrid => serializeGrid(grid);
