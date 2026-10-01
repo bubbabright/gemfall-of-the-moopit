@@ -59,3 +59,8 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 echo "GATES PASS"
+# Remember the code that passed, so npm run ship needn't rerun the gates on it. Only for a clean
+# tree, where HEAD's tree is exactly what was tested.
+if [ -z "$(git status --porcelain)" ]; then
+  git rev-parse 'HEAD^{tree}' >"$(git rev-parse --git-dir)/gemfall-gates-pass"
+fi

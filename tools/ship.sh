@@ -3,6 +3,8 @@
 #
 #   npm run ship
 #
+#   npm run ship -- --no-gates    push without running the gates (Daniel's call)
+#
 # Only run this after Daniel has said to ship (AGENTS.md). It refuses unless on main, the
 # working tree is clean, and HEAD is ahead of origin/main — so it can only ever push commits
 # someone chose to make. "Live" means the bundle at the public URL contains HEAD's short hash
@@ -14,6 +16,11 @@ LIVE="https://gemfall.moopit.fun"
 WAIT_TRIES=40   # × 15 s = 10 min
 # GEMFALL's own dev ports (docs/DEVELOPING.md): npm run dev, selftest's server.
 DEV_PORTS=(4770 4772)
+# Paths whose changes reach players. Anything else (docs, test tools, vercel.json) ships without
+# gates: the build players get is the same.
+GAME_PATHS='^(src/|public/|index\.html$|package(-lock)?\.json$|vite\.config\.ts$|tsconfig\.json$)'
+SKIP_GATES=0
+[ "${1:-}" = "--no-gates" ] && SKIP_GATES=1
 
 cd "$ROOT"
 
@@ -34,7 +41,18 @@ ahead="$(git rev-list --count origin/main..HEAD)"
 hash="$(git rev-parse HEAD | cut -c1-7)"
 echo "shipping ${ahead} commit(s), HEAD ${hash}"
 
-if ! tools/gates.sh; then
+# Gates only when they can catch something: the shipped commits change what players get, and
+# the gates haven't already passed on exactly this code here (tools/gates.sh records that).
+changed="$(git diff --name-only origin/main..HEAD)"
+game_files="$(printf '%s\n' "$changed" | grep -E "${GAME_PATHS}" || true)"
+passed_tree="$(cat "$(git rev-parse --git-dir)/gemfall-gates-pass" 2>/dev/null || true)"
+if [ "$SKIP_GATES" = 1 ]; then
+  echo "gates: skipped (--no-gates)"
+elif [ -z "$game_files" ]; then
+  echo "gates: skipped (nothing players get changed: docs, tools or hosting config only)"
+elif [ "$passed_tree" = "$(git rev-parse 'HEAD^{tree}')" ]; then
+  echo "gates: already passed on this exact code"
+elif ! tools/gates.sh; then
   echo "SHIP STOPPED: gates failed, nothing pushed" >&2
   exit 1
 fi

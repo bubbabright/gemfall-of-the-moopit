@@ -11,7 +11,11 @@ minutes. `npm run ship` (`tools/ship.sh`) does the whole thing and checks it wor
 
 1. Refuses unless you're on `main`, the working tree is clean, and HEAD is ahead of
    `origin/main` (and not behind it).
-2. Runs `npm run gates` on the committed code; stops without pushing if any gate fails.
+2. Runs `npm run gates` on the committed code, and stops without pushing if any gate fails. It
+   skips them when the shipped commits change nothing players get (only docs, test tools or
+   `vercel.json`; the game paths are `GAME_PATHS` in `ship.sh`), when the gates already passed
+   on exactly this code on this machine (`gates.sh` records it after a clean-tree pass), or when
+   run as `npm run ship -- --no-gates`.
 3. `git push origin main`.
 4. Every 15 s for up to 10 min, fetches the live `index.html` and its JS bundle and looks for
    HEAD's short hash in it. That hash is stamped in from Vercel's `VERCEL_GIT_COMMIT_SHA`, so a
