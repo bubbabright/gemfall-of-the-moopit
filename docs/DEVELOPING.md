@@ -1,7 +1,7 @@
 # Developing GEMFALL
 
 How to run it, where things live, and how to check a change before it ships. The approved
-game design is in [`bejeweled-spec.md`](../bejeweled-spec.md). The live URL is
+game design is in [`bejeweled-spec.md`](bejeweled-spec.md). The live URL is
 `gemfall.moopit.fun`; the spec still says `bejeweled.moopit.fun` from before the rename.
 
 ## Run it
@@ -355,7 +355,7 @@ Two rules for that voice. Keep the wording itself in `src/messages.ts`, and keep
 ## Art and sound
 
 All art is generated in code. It already follows the art contract in
-[spec §7](../bejeweled-spec.md), so real artwork can be dropped in without code changes:
+[spec §7](bejeweled-spec.md), so real artwork can be dropped in without code changes:
 
 - `assets/gems.png`: 64×64 cells, 7 columns × 4 rows (normal, line blaster, bomb,
   hypercube), frames named `gem_<colour>`, `special_line_<colour>`, `special_bomb_<colour>`,

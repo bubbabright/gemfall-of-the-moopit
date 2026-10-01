@@ -112,7 +112,7 @@ by code, and no art or code comes from the real Bejeweled. It's built with
 | See how it's tested | [docs/DEVELOPING.md › Check a change](docs/DEVELOPING.md#check-a-change) |
 | Know how it gets online | [docs/DEPLOYING.md](docs/DEPLOYING.md) |
 | See what changed and when | [CHANGELOG.md](CHANGELOG.md) |
-| Read the original design | [bejeweled-spec.md](bejeweled-spec.md) |
+| Read the original design | [docs/bejeweled-spec.md](docs/bejeweled-spec.md) |
 
 Quick start:
 

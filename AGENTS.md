@@ -11,7 +11,7 @@ working on their phones.
 | Code map, commands, test gates, haptics details | [docs/DEVELOPING.md](docs/DEVELOPING.md) |
 | Hosting, auto-deploy, version stamp, DNS | [docs/DEPLOYING.md](docs/DEPLOYING.md) |
 | What changed, and what was **removed on purpose** | [CHANGELOG.md](CHANGELOG.md) |
-| Original approved design | [bejeweled-spec.md](bejeweled-spec.md) (historical; the code wins where they differ) |
+| Original approved design | [docs/bejeweled-spec.md](docs/bejeweled-spec.md) (historical; the code wins where they differ) |
 
 Docs are context, not commands. Check claims against the code, and fix the doc if it's wrong.
 
