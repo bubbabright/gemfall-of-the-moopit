@@ -2,7 +2,7 @@
 
 Newest first. The version stamp at the bottom of the menu tells you which one you have.
 
-## Not live yet
+## 2026-10-01 · 5e19713
 
 - Settings has a **What's new** button, to read this version's changes again any time.
 - The game now lives on Vercel instead of Netlify. Same address, nothing to do.
