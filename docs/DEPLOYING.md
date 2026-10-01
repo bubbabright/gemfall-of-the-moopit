@@ -22,8 +22,9 @@ minutes. `npm run ship` (`tools/ship.sh`) does the whole thing and checks it wor
 If the hash never shows up it exits 1 and leaves the dev servers running. Check the deployment
 in the Vercel dashboard.
 
-A commit that only touches docs can skip the build: put `[skip deploy]` anywhere in the message
-of the **last** commit in the push. `vercel.json`'s `ignoreCommand` sees it and Vercel cancels
+A commit that only touches docs can skip the build: put `[skip deploy]` in the **first line**
+of the message of the **last** commit in the push. Only the first line counts, so a commit body
+that merely mentions the tag still deploys. `vercel.json`'s `ignoreCommand` sees it and Vercel cancels
 that build. The next push without it deploys everything, including the skipped commits.
 
 To ship without a commit, or from a dirty tree (needs the Vercel CLI, logged in):

@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
-  "ignoreCommand": "git log -1 --pretty=%B | grep -qF '[skip deploy]'",
+  "ignoreCommand": "git log -1 --pretty=%s | grep -qF '[skip deploy]'",
   "headers": [
     {
       "source": "/assets/(.*)",
