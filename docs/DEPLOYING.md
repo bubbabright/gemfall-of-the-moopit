@@ -2,7 +2,7 @@
 
 Live at **<https://gemfall.moopit.fun>**, hosted on Vercel (project `gemfall-of-the-moopit`,
 free tier). It's a static site: `npm run build` produces `dist/`, and that's the whole thing.
-Netlify hosted it until v0.3.0 and is retired.
+Netlify hosted it until 2026-09-27 and is retired; it no longer builds.
 
 ## Ship a change
 
