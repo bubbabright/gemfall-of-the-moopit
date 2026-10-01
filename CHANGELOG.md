@@ -6,6 +6,8 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 - The version line at the bottom of the menu is bigger and easier to read, with a link to the
   game's code on GitHub under it.
+- The menu says **No best yet** instead of "No score yet" before you've finished a game in
+  that mode, so it no longer seems to argue with a paused game's points.
 - Fixed: going back to the menu, picking another mode and tapping **RESUME RUN** brought back
   the old game with its points. Each mode and difficulty now keeps its own unfinished game, and
   RESUME only shows for the one you've picked. **PLAY NOW** always starts from zero.

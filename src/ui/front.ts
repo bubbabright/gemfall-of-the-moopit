@@ -188,7 +188,7 @@ function select(m: Mode, d: Difficulty): void {
   const best = getHighScore(m, d);
   els.best.textContent = best
     ? `Best · ${MODES[m].label} · ${DIFFICULTIES[d].label} — ${best.score.toLocaleString()}`
-    : `No score yet · ${MODES[m].label} · ${DIFFICULTIES[d].label}`;
+    : `No best yet · ${MODES[m].label} · ${DIFFICULTIES[d].label}`;
   showResume();
 }
 
