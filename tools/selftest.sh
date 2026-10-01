@@ -9,6 +9,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${SELFTEST_PORT:-4772}"
 URL="http://127.0.0.1:${PORT}/selftest.html"
 CHROME="${CHROME:-/usr/bin/chromium}"
+# How Chromium draws: the same choice as tools/gpu-flags.mjs (keep the two in step).
+GPU="${GEMFALL_GPU:-$([ -e /dev/dri ] && echo vulkan || echo off)}"
+case "$GPU" in
+  vulkan) GPU_FLAGS=(--use-gl=angle --use-angle=vulkan --enable-features=Vulkan) ;;
+  swiftshader) GPU_FLAGS=(--use-angle=swiftshader --enable-unsafe-swiftshader) ;;
+  off) GPU_FLAGS=(--disable-gpu) ;;
+  *) echo "GEMFALL_GPU=$GPU: use vulkan, swiftshader or off" >&2; exit 2 ;;
+esac
 
 cd "$ROOT"
 
@@ -43,7 +51,7 @@ if ! ss -ltn | grep -q ":${PORT} "; then
   exit 2
 fi
 
-html="$("$CHROME" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage \
+html="$("$CHROME" --headless --no-sandbox "${GPU_FLAGS[@]}" --disable-dev-shm-usage \
   --virtual-time-budget=20000 --dump-dom "$URL" 2>/dev/null)"
 
 title="$(printf '%s' "$html" | grep -oE 'selftest-(PASS|FAIL)-[0-9]+' | head -1)"

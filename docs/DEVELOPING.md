@@ -12,6 +12,12 @@ The engine is Phaser 4.
 In a Claude Code on the web session, `.claude/hooks/session-start.sh` sets the container up
 first: `npm install`, a `chromium` command, Pillow and `ss`. It does nothing on a normal PC.
 
+The test tools' headless Chromium uses the graphics card when the machine has one (`/dev/dri`):
+Vulkan, so the game runs on WebGL as it does on a phone. With no card (cloud containers) it
+runs without a GPU, and Phaser uses its Canvas renderer. Set `GEMFALL_GPU=vulkan`,
+`swiftshader` (WebGL in software) or `off` to choose; `tools/gpu-flags.mjs` owns the flags, and
+the playtest log's first line says which mode ran.
+
 ```bash
 npm install
 npm run dev          # vite dev server on http://localhost:4770
@@ -86,6 +92,7 @@ tools/
   analyze-shots.py   offline screenshot checks (Pillow)
   probe-scale.mjs    screen-fit, sharpness, tap and phone-turning test
   pwa-check.mjs      installable, offline, and every request stays on the game's own site
+  gpu-flags.mjs      how every tool's Chromium draws (GEMFALL_GPU; selftest.sh mirrors it)
   make-icons.py      draws public/icons/ (Pillow); re-run only when the icon changes
   poc.sh             build and serve on the LAN (the dev preview, :4771)
   gates.sh           npm run gates: fresh build + preview, then all six gates, one verdict

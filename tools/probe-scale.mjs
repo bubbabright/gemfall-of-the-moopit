@@ -19,6 +19,7 @@
 
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { gpuFlags } from './gpu-flags.mjs';
 
 const BASE = process.argv[2] ?? 'https://gemfall.moopit.fun';
 const PORT = 4787;
@@ -41,7 +42,7 @@ const chrome = spawn(
   [
     '--headless=new',
     '--no-sandbox',
-    '--disable-gpu',
+    ...gpuFlags(),
     '--disable-dev-shm-usage',
     '--hide-scrollbars',
     '--mute-audio',

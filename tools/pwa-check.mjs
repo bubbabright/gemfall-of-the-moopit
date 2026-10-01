@@ -22,6 +22,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { gpuFlags } from './gpu-flags.mjs';
 
 const BASE = process.argv[2] ?? 'http://127.0.0.1:4771';
 const PORT = 4788;
@@ -35,7 +36,7 @@ const chrome = spawn(
   [
     '--headless=new',
     '--no-sandbox',
-    '--disable-gpu',
+    ...gpuFlags(),
     '--disable-dev-shm-usage',
     '--mute-audio',
     '--window-size=412,915',

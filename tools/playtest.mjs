@@ -14,10 +14,12 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { GPU_MODE, gpuFlags } from './gpu-flags.mjs';
 
 const BASE = process.argv[2] ?? 'http://127.0.0.1:4770';
 const PORT = 4780;
 const OUT_DIR = 'poc';
+console.log(`browser GPU: ${GPU_MODE} (GEMFALL_GPU; see tools/gpu-flags.mjs)`);
 
 mkdirSync(OUT_DIR, { recursive: true });
 
@@ -28,7 +30,7 @@ const chrome = spawn(
   [
     '--headless=new',
     '--no-sandbox',
-    '--disable-gpu',
+    ...gpuFlags(),
     '--disable-dev-shm-usage',
     '--hide-scrollbars',
     '--mute-audio',
