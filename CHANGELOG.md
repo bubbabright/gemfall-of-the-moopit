@@ -4,6 +4,11 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 ## Not live yet
 
+- Settings has a **What's new** button, to read this version's changes again any time.
+- The game now lives on Vercel instead of Netlify. Same address, nothing to do.
+
+## 2026-10-01 · 8790ba5
+
 - **Endless:** every level up now earns you an extra shuffle, so a good game lasts longer.
 - The level's progress (like "1,200 / 2,500 pts") now sits right next to **LEVEL**, so it no
   longer looks like part of the shuffles count.
@@ -97,6 +102,7 @@ Don't bring these back without a good reason.
 
 | What | Why it went | Replaced by |
 |---|---|---|
+| Netlify hosting and `netlify.toml` | Daniel moved the site to Vercel | Vercel, set up by `vercel.json` (docs/DEPLOYING.md) |
 | `MIN_GAP_MS`, a 45 ms guard that dropped any buzz close to the last one | It silently swallowed the heavier power-gem buzz, so detonations never buzzed | A busy window in `src/haptics.ts`: heavier patterns replace, lighter ones yield |
 | 18 ms match buzz, 1 ms `haptics.unlock()` | Too short for any phone motor to feel | `MIN_ON_MS` (40 ms) floor; `haptics.confirm()` (50 ms) |
 | Two buzz calls per cascade step (match + detonation) | The second call was always dropped | One `haptics.explosion(depth, heavy)` per step |

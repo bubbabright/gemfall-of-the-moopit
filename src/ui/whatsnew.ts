@@ -1,6 +1,6 @@
 import { hasPlayedBefore, loadSeenVersion, saveSeenVersion } from '../core/storage';
 import { APP_VERSION, CHANGELOG_URL } from '../version';
-import { notesSince } from '../whatsnew';
+import { RELEASES, notesSince, type Release } from '../whatsnew';
 import { sfx } from '../audio/sfx';
 
 /**
@@ -25,7 +25,17 @@ export function maybeShowWhatsNew(): boolean {
   const releases = hasPlayedBefore() ? notesSince(seen, APP_VERSION) : [];
   saveSeenVersion(APP_VERSION);
   if (!releases.length) return false;
+  show(releases);
+  return true;
+}
 
+/** Settings' "What's new" button: this version's notes, any time. */
+export function openWhatsNew(): void {
+  const current = notesSince(null, APP_VERSION);
+  show(current.length ? current : RELEASES.slice(0, 1));
+}
+
+function show(releases: Release[]): void {
   panel?.remove();
   const root = el('div');
   root.id = 'whatsnew';
@@ -76,7 +86,6 @@ export function maybeShowWhatsNew(): boolean {
   document.body.append(root);
   panel = root;
   done.focus({ preventScroll: true });
-  return true;
 }
 
 export const whatsNewOpen = (): boolean => panel !== null;

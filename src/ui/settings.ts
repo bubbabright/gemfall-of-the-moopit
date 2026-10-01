@@ -3,6 +3,7 @@ import { loadSettings, saveSettings } from '../core/storage';
 import { haptics } from '../haptics';
 import { sfx } from '../audio/sfx';
 import { refreshSpeaker } from './corners';
+import { openWhatsNew } from './whatsnew';
 
 /**
  * The settings panel, behind the gear on the menu and in a game (issue #3): sound, buzz,
@@ -113,6 +114,7 @@ function build(): HTMLElement {
     row('Test buzz', 'Hold to check your phone can buzz', test),
     els.status,
     stacked(row('Messages', 'How long they stay on screen', steps)),
+    row("What's new", 'What changed in this version', tapButton('step', ['Show'], openWhatsNew)),
     els.done,
   ]);
   sheet.setAttribute('role', 'dialog');

@@ -128,6 +128,11 @@ def check_menu(d: Path, geo: dict) -> bool:
     if len(chips) != 3:
         print(f"  FAIL: expected 3 difficulty chips, geometry has {len(chips)}")
         return False
+    # A falling gem behind a see-through chip adds some purple of its own, so an unselected
+    # chip only fails when it's at least half as filled as the selected one.
+    selected_fill = max(
+        (count_in(img, dpr, c, 0.15, 0.85, purple_fill) for c in chips if c["selected"]), default=0
+    )
     for b in chips:
         text = count_in(img, dpr, b, 0.2, 0.8, bright)
         fill = count_in(img, dpr, b, 0.15, 0.85, purple_fill)
@@ -140,7 +145,7 @@ def check_menu(d: Path, geo: dict) -> bool:
         if b["selected"] and fill < 200:
             print(f"  FAIL: the selected '{b['name']}' chip isn't filled")
             ok = False
-        if not b["selected"] and fill >= 200:
+        if not b["selected"] and fill >= max(200, selected_fill // 2):
             print(f"  FAIL: the '{b['name']}' chip looks selected but isn't")
             ok = False
 

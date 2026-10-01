@@ -6,7 +6,7 @@ game design is in [`bejeweled-spec.md`](bejeweled-spec.md). The live URL is
 
 ## Run it
 
-Requires Node 20+ (developed on Node 24). `netlify.toml` pins Node 20 for the Netlify build.
+Requires Node 20+ (developed on Node 24). Vercel builds with its default Node (20 or newer).
 The engine is Phaser 4.
 
 In a Claude Code on the web session, `.claude/hooks/session-start.sh` sets the container up
@@ -78,8 +78,9 @@ src/
   ui/front.ts        the front screen: splash, then the HTML menu (see "Opening screen")
   ui/corners.ts      the corner buttons on both screens: speaker (mute) and gear (settings)
   ui/settings.ts     the settings panel behind the gear
-  ui/whatsnew.ts     the What's new sheet: shown once per version to returning players (anyone
-                     with saved data); new players skip it. Seen version in storage.ts
+  ui/whatsnew.ts     the What's new sheet: once per version to returning players (anyone
+                     with saved data); new players skip it. Settings' What's new button reopens it.
+                     Seen version in storage.ts; each site address (live, every preview) keeps its own
   ui/pill.ts         the rounded in-game button (read the hit-area note in it)
   gfx/gems.ts        procedural gem and power-gem textures
   audio/sfx.ts       procedural WebAudio sound effects and background music

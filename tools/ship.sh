@@ -6,7 +6,7 @@
 # Only run this after Daniel has said to ship (AGENTS.md). It refuses unless on main, the
 # working tree is clean, and HEAD is ahead of origin/main — so it can only ever push commits
 # someone chose to make. "Live" means the bundle at the public URL contains HEAD's short hash
-# (vite.config.ts stamps COMMIT_REF into it), checked with curl alone.
+# (vite.config.ts stamps VERCEL_GIT_COMMIT_SHA into it), checked with curl alone.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -47,7 +47,7 @@ live_has_hash() {
   [ -n "$asset" ] && curl -fsS "${LIVE}/${asset}" | grep -q "\"${hash}\""
 }
 
-echo "pushed; waiting for Netlify to publish ${hash} at ${LIVE} (up to 10 min)…"
+echo "pushed; waiting for Vercel to publish ${hash} at ${LIVE} (up to 10 min)…"
 live=0
 for _ in $(seq 1 "$WAIT_TRIES"); do
   if live_has_hash; then
@@ -57,8 +57,8 @@ for _ in $(seq 1 "$WAIT_TRIES"); do
   sleep 15
 done
 if [ "$live" -ne 1 ]; then
-  echo "FAIL: ${hash} still not live after 10 min. Dev servers left up. Check 'netlify watch'" >&2
-  echo "      or the Netlify dashboard (project moopit-bejeweled)." >&2
+  echo "FAIL: ${hash} still not live after 10 min. Dev servers left up. Check the deployment" >&2
+  echo "      in the Vercel dashboard (project gemfall-of-the-moopit)." >&2
   exit 1
 fi
 
