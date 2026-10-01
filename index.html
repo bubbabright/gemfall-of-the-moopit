@@ -376,9 +376,16 @@
     }
     #front .foot {
       margin: 0;
-      font-size: 0.75rem;
-      letter-spacing: 0.1em;
-      color: var(--text-faint);
+      font-size: 0.875rem;
+      line-height: 1.5;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+    }
+    #front .foot .nowrap { white-space: nowrap; }
+    #front .foot .repo {
+      color: var(--text-dim);
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
 
     /* Corner buttons on the menu and in a game (src/ui/corners.ts): the speaker top left (a red

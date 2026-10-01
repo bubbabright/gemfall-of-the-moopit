@@ -4,6 +4,8 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 ## Not live yet
 
+- The version line at the bottom of the menu is bigger and easier to read, with a link to the
+  game's code on GitHub under it.
 - Fixed: going back to the menu, picking another mode and tapping **RESUME RUN** brought back
   the old game with its points. Each mode and difficulty now keeps its own unfinished game, and
   RESUME only shows for the one you've picked. **PLAY NOW** always starts from zero.

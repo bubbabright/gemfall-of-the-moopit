@@ -8,7 +8,7 @@ import {
 } from '../config';
 import { getHighScore, loadSavedRun, loadSettings, saveSettings } from '../core/storage';
 import { MOOPIT_TAPS, MOOPIT_TAP_WINDOW_MS, voiceFor } from '../messages';
-import { BUILD_LABEL } from '../version';
+import { BUILD_TIME, CODENAME, REPO_URL, VERSION_LABEL } from '../version';
 import { haptics } from '../haptics';
 import { sfx } from '../audio/sfx';
 import { openSettings } from './settings';
@@ -97,6 +97,24 @@ function button(className: string, children: (Node | string)[], action: () => vo
   return b;
 }
 
+/**
+ * The build stamp (BUILD_LABEL's text) in pieces that never break inside, so on a narrow phone
+ * the time drops to its own line whole instead of leaving "EDT" alone on one.
+ */
+function stampParts(): (Node | string)[] {
+  const head = [VERSION_LABEL, CODENAME && `"${CODENAME}"`].filter(Boolean).join(' · ');
+  return [el('span', 'nowrap', [head]), ' · ', el('span', 'nowrap', [BUILD_TIME])];
+}
+
+/** The repo link under the version line. Opens in the browser; the menu itself loads nothing. */
+function repoLink(): HTMLAnchorElement {
+  const a = el('a', 'repo', [REPO_URL.replace('https://', '')]);
+  a.href = REPO_URL;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  return a;
+}
+
 function build(ui: HTMLElement): void {
   els.modes = new Map();
   els.difficulties = new Map();
@@ -142,7 +160,7 @@ function build(ui: HTMLElement): void {
     els.resumeSlot,
     els.best,
     install,
-    el('p', 'foot', [BUILD_LABEL]),
+    el('p', 'foot', [...stampParts(), el('br', ''), repoLink()]),
   ];
   // Stagger for the fade-in (see .ui > * in index.html).
   parts.forEach((part, i) => part.style.setProperty('--n', String(i)));

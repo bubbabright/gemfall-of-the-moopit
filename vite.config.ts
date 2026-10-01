@@ -83,6 +83,8 @@ export default defineConfig(({ command, mode }) => {
       __BUILD_TIME__: JSON.stringify(easternTime(new Date())),
       // Only the built game registers the service worker; the dev server always serves fresh code.
       __SERVICE_WORKER__: JSON.stringify(command === 'build'),
+      // The dev server: the menu shows page-load time rather than a stamp frozen at server start.
+      __DEV_SERVER__: JSON.stringify(command === 'serve'),
     },
     plugins: [serviceWorker()],
     build: {
