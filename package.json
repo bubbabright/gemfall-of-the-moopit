@@ -15,6 +15,7 @@
     "visual": "python3 tools/analyze-shots.py poc",
     "scaling": "node tools/probe-scale.mjs",
     "pwa": "node tools/pwa-check.mjs",
+    "powerups": "node tools/powerups.mjs",
     "poc": "tools/poc.sh",
     "gates": "tools/gates.sh",
     "ship": "tools/ship.sh"

@@ -40,7 +40,7 @@ stop servers whose working directory is this repo.
 | 4770 | `npm run dev` |
 | 4771 | dev preview: `tools/poc.sh`, `npm run preview`, `npm run gates` |
 | 4772 | the dev server `selftest` starts and stops for itself |
-| 4780–4788 | headless-Chromium debug ports: playtest 4780, probe-input 4781, probe-pointer 4782, probe-hittest 4783, probe-sweep 4784, probe-hittest2 4785, probe-layout 4786, probe-scale 4787, pwa-check 4788 |
+| 4780–4789 | headless-Chromium debug ports: playtest 4780, probe-input 4781, probe-pointer 4782, probe-hittest 4783, probe-sweep 4784, probe-hittest2 4785, probe-layout 4786, probe-scale 4787, pwa-check 4788, powerups 4789 |
 
 ### Try it on a phone on the same Wi-Fi
 
@@ -92,10 +92,11 @@ tools/
   analyze-shots.py   offline screenshot checks (Pillow)
   probe-scale.mjs    screen-fit, sharpness, tap and phone-turning test
   pwa-check.mjs      installable, offline, and every request stays on the game's own site
+  powerups.mjs       plays set-up boards: every match shape and power gem, by touch
   gpu-flags.mjs      how every tool's Chromium draws (GEMFALL_GPU; selftest.sh mirrors it)
   make-icons.py      draws public/icons/ (Pillow); re-run only when the icon changes
   poc.sh             build and serve on the LAN (the dev preview, :4771)
-  gates.sh           npm run gates: fresh build + preview, then all six gates, one verdict
+  gates.sh           npm run gates: fresh build + preview, then all seven gates, one verdict
   ship.sh            npm run ship: gates, push, wait until live, stop dev servers
   probe-*.mjs        one-off diagnostics kept for reference; not part of any gate. The
                      hittest, sweep, input, pointer and layout probes drove the old Phaser
@@ -132,6 +133,7 @@ npm run playtest     # integration: real clicks on a real build
 npm run visual       # offline pixel checks on the playtest screenshots
 npm run scaling      # the board fits every viewport, including phones
 npm run pwa          # installable, opens offline, no requests off-site (built game only)
+npm run powerups     # plays every match shape and power gem on a phone-sized screen
 ```
 
 `selftest` starts its own dev server on `:4772` and stops it afterwards; if that port is held by
@@ -197,6 +199,19 @@ switched off, and every request the page and worker made went to the game's own 
 `playtest`, it needs a URL or the dev preview on `:4771`. It also checks that the plain preview
 (no `?sw`) registers no service worker, that starting a game asks for a screen wake lock, that
 the menu offers the Install app button, and that the manifest link sends credentials.
+
+**`powerups`** plays the game on Daniel's phone size (411×751 at 2.625×, touch input). For each
+of 13 scenarios it lays out an exact board, makes one move with real taps or a swipe, and checks
+what the game's first clear took and which power gem it made: match 3 (nothing made), match 4
+across and down (line blasters), match 5 (hypercube), L and T shapes (bombs), each power gem
+going off (row, column, 3×3), a line blast setting off a bomb, a hypercube swapped with a gem
+(that whole colour) and with another hypercube (the whole board), and a swap that doesn't match
+(bounces back, nothing changes). A new power gem must still be on the board afterwards, where
+it fell. The filler gems are a 2×2 checker of four colours, which can never line up three, so
+only the scenario's gems can match; the tool checks its own boards before playing them. It
+wraps (never replaces) the scene's `animateClear` and `createSprite` to see what was cleared
+and made. Screenshots of the new power gems go to `poc/powerups-*.png`. Like `playtest`, it
+needs a URL or the dev preview on `:4771`.
 
 ### Installable app
 

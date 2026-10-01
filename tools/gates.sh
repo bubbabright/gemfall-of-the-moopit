@@ -4,8 +4,8 @@
 #   npm run gates
 #
 # Rebuilds dist/ and (re)starts the dev preview (tools/poc.sh, port 4771), then runs
-# typecheck, selftest, playtest, visual, scaling and pwa. All of them run even if one fails; one
-# table at the end; exit 1 on any FAIL. The preview stays up so Daniel can try the change.
+# typecheck, selftest, playtest, visual, scaling, pwa and powerups. All of them run even if one
+# fails; one table at the end; exit 1 on any FAIL. The preview stays up so Daniel can try the change.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -45,6 +45,7 @@ run playtest npm run playtest -- "$PREVIEW"
 run visual npm run visual
 run scaling npm run scaling -- "$PREVIEW"
 run pwa npm run pwa -- "$PREVIEW"
+run powerups npm run powerups -- "$PREVIEW"
 
 echo
 echo "── gates ─────────────────────────────"
