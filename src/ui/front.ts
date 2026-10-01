@@ -8,12 +8,13 @@ import {
 } from '../config';
 import { getHighScore, loadSavedRun, loadSettings, saveSettings } from '../core/storage';
 import { MOOPIT_TAPS, MOOPIT_TAP_WINDOW_MS, voiceFor } from '../messages';
-import { BUILD_TIME, CODENAME, REPO_URL, VERSION_LABEL } from '../version';
+import { BUILD_TIME, CHANGELOG_URL, CODENAME, REPO_URL, VERSION_LABEL } from '../version';
 import { haptics } from '../haptics';
 import { sfx } from '../audio/sfx';
 import { openSettings } from './settings';
 import { showCorners } from './corners';
 import { onInstallAvailability, promptInstall } from './install';
+import { maybeShowWhatsNew, whatsNewOpen } from './whatsnew';
 
 /**
  * The front screen: the boot splash, then the menu, as one HTML page over the game canvas
@@ -106,10 +107,14 @@ function stampParts(): (Node | string)[] {
   return [el('span', 'nowrap', [head]), ' · ', el('span', 'nowrap', [BUILD_TIME])];
 }
 
-/** The repo link under the version line. Opens in the browser; the menu itself loads nothing. */
+/**
+ * The repo link under the version line, straight to the changelog. Opens in the browser; the
+ * menu itself loads nothing.
+ */
 function repoLink(): HTMLAnchorElement {
   const a = el('a', 'repo', [REPO_URL.replace('https://', '')]);
-  a.href = REPO_URL;
+  a.href = CHANGELOG_URL;
+  a.title = 'What changed, version by version';
   a.target = '_blank';
   a.rel = 'noopener noreferrer';
   return a;
@@ -172,7 +177,7 @@ function build(ui: HTMLElement): void {
   // Enter plays, like tapping PLAY NOW (Tab moves between the buttons).
   document.addEventListener('keydown', (event) => {
     const front = root();
-    if (event.key !== 'Enter' || !front?.classList.contains('menu')) return;
+    if (event.key !== 'Enter' || !front?.classList.contains('menu') || whatsNewOpen()) return;
     if (document.activeElement instanceof HTMLButtonElement) return;
     event.preventDefault();
     els.play.click();
@@ -265,6 +270,8 @@ function show(startRun: (run: RunChoice) => void): void {
   // Once the entrance has played, drop the staggered animations so re-renders don't replay them.
   window.setTimeout(() => front.classList.add('settled'), 1400);
   els.play.focus({ preventScroll: true });
+  // A returning player's first open of a new version: say what changed, once the menu is in.
+  if (fromSplash) window.setTimeout(() => maybeShowWhatsNew(), loadSettings().reducedMotion ? 0 : 900);
 }
 
 /** Fade the front screen out so the game shows; skip straight past the menu on a deep link. */

@@ -4,6 +4,12 @@ Newest first. The version stamp at the bottom of the menu tells you which one yo
 
 ## Not live yet
 
+- **Endless:** every level up now earns you an extra shuffle, so a good game lasts longer.
+- The level's progress (like "1,200 / 2,500 pts") now sits right next to **LEVEL**, so it no
+  longer looks like part of the shuffles count.
+- After an update, the first time you open the game it shows a short **What's new** list.
+  Brand-new players don't get it, since everything is new to them.
+- The GitHub link under the version line now opens the full list of changes.
 - The version line at the bottom of the menu is bigger and easier to read, with a link to the
   game's code on GitHub under it.
 - The menu says **No best yet** instead of "No score yet" before you've finished a game in

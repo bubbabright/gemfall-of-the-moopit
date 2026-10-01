@@ -419,7 +419,7 @@
     #corners .speaker.muted .waves { opacity: 0.35; }
 
     /* Settings panel: a sheet over everything, on the menu and in a game. */
-    #settings {
+    #settings, #whatsnew {
       position: fixed;
       inset: 0;
       z-index: 30;
@@ -432,7 +432,7 @@
       user-select: none;
     }
     #settings[hidden] { display: none; }
-    #settings .sheet {
+    #settings .sheet, #whatsnew .sheet {
       box-sizing: border-box;
       width: 100%;
       max-width: 28rem;
@@ -447,10 +447,10 @@
       animation: sheet-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
     }
     @media (min-height: 600px) and (min-width: 600px) {
-      #settings { align-items: center; }
-      #settings .sheet { border-radius: 22px; border-bottom: 1px solid var(--line); }
+      #settings, #whatsnew { align-items: center; }
+      #settings .sheet, #whatsnew .sheet { border-radius: 22px; border-bottom: 1px solid var(--line); }
     }
-    #settings h2 {
+    #settings h2, #whatsnew h2 {
       margin: 0 0 8px;
       font-family: Cinzel, Georgia, serif;
       font-size: 1rem;
@@ -471,7 +471,7 @@
     #settings .what { display: flex; flex-direction: column; gap: 2px; }
     #settings .name { font-size: 1rem; font-weight: 800; color: var(--text-hi); }
     #settings .hint { font-size: 0.8rem; color: var(--text-dim); }
-    #settings button {
+    #settings button, #whatsnew button {
       margin: 0;
       font: inherit;
       color: inherit;
@@ -480,7 +480,7 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    #settings button:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+    #settings button:focus-visible, #whatsnew button:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
     #settings .switch {
       position: relative;
       flex: none;
@@ -522,7 +522,7 @@
     #settings .step { padding: 0 10px; min-width: 48px; }
     #settings .step[aria-pressed="true"] { background: rgba(140, 60, 255, 0.35); border-color: rgba(170, 110, 255, 0.8); color: #fff; }
     #settings .status { min-height: 1.2em; margin: 6px 0 0; font-size: 0.8rem; color: var(--text-dim); }
-    #settings .done {
+    #settings .done, #whatsnew .done {
       display: block;
       width: 100%;
       min-height: 50px;
@@ -535,6 +535,27 @@
       letter-spacing: 0.3em;
       text-transform: uppercase;
       color: #fff;
+    }
+    #whatsnew { z-index: 31; }
+    #whatsnew .ver {
+      margin: 14px 0 4px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    #whatsnew ul { margin: 0; padding-left: 1.2em; }
+    #whatsnew li { margin: 8px 0; font-size: 1rem; line-height: 1.4; color: var(--text); }
+    #whatsnew li::marker { color: #c48bff; }
+    #whatsnew .more {
+      display: block;
+      margin-top: 14px;
+      font-size: 0.875rem;
+      color: var(--text-dim);
+      text-align: center;
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
     @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 

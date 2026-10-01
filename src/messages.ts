@@ -26,6 +26,8 @@ export interface Voice {
   comboTiers: readonly (readonly string[])[];
   toast: {
     endlessStart: (shuffles: number) => string;
+    /** Endless levelled up and earned shuffles; `left` is the new total. */
+    shuffleEarned: (earned: number, left: number) => string;
     /** A swap that matched nothing. */
     noMatch: readonly string[];
     /** No move left on the board, so it shuffles itself. */
@@ -60,6 +62,7 @@ const plain: Voice = {
   comboTiers: [[], [], [], [], []],
   toast: {
     endlessStart: (shuffles) => `Endless · ${shuffles} shuffles`,
+    shuffleEarned: (earned, left) => `+${earned} shuffle${earned > 1 ? 's' : ''} · ${left} left`,
     noMatch: ['No match there'],
     shuffling: ['No moves left — shuffling'],
     noMoves: 'No moves — shuffling',
@@ -101,6 +104,7 @@ const moopit: Voice = {
 
   toast: {
     endlessStart: (shuffles) => `endless, Ted bear · ${shuffles} shuffles`,
+    shuffleEarned: (earned, left) => `+${earned} shuffle${earned > 1 ? 's' : ''}, Ted bear · ${left} left`,
     noMatch: [
       'wires crossed',
       'dropped the ball',

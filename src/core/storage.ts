@@ -44,6 +44,7 @@ export interface SavedRun {
   levelScore: number;
   movesLeft: number;
   timeLeftMs: number;
+  /** Endless shuffles used, net of those earned by levelling up (can be below zero). */
   shuffles: number;
   savedAt: number;
 }
@@ -87,6 +88,24 @@ const write = (key: string, value: unknown): void => {
     /* private mode / quota — persistence is best-effort, never fatal */
   }
 };
+
+// ── What's new ────────────────────────────────────────────────────────────────
+
+export const loadSeenVersion = (): string | null => read<string | null>(STORAGE.seenVersion, null);
+export const saveSeenVersion = (version: string): void => write(STORAGE.seenVersion, version);
+
+/** Anything saved by an earlier visit: settings, a best score, an unfinished game. */
+export function hasPlayedBefore(): boolean {
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i) ?? '';
+      if (key.startsWith('bejeweled.') && key !== STORAGE.seenVersion) return true;
+    }
+  } catch {
+    /* storage blocked: treat as new */
+  }
+  return false;
+}
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 

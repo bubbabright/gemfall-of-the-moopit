@@ -21,6 +21,7 @@ import { levelTarget, multiplierForDepth, stepScore } from './score';
 import type { Cell, Grid } from './types';
 import { clearSavedRun, loadSavedRun, saveRun } from './storage';
 import { STORAGE } from '../config';
+import { RELEASES, compareVersions, notesSince } from '../whatsnew';
 
 // ── harness ───────────────────────────────────────────────────────────────────
 
@@ -394,6 +395,15 @@ section('end-to-end cascade simulation', () => {
   // Power gems must survive in the grid rather than being silently overwritten.
   const specialCount = grid.flat().filter((c) => c && c.special !== 'none').length;
   check('power gems can exist on a settled board', specialCount >= 0, `${specialCount} power gems`);
+});
+
+section("what's new: which notes a returning player sees", () => {
+  check('versions compare numerically', compareVersions('0.10.0', '0.9.1') > 0 && compareVersions('1.2', '1.2.0') === 0);
+  const newest = RELEASES[0].version;
+  check('up to date: no notes', notesSince(newest, newest).length === 0);
+  check('from before the notes existed: just this version', notesSince(null, newest).map((r) => r.version).join() === newest);
+  check('from an older version: this one is included', notesSince('0.0.1', newest).some((r) => r.version === newest));
+  check('releases are newest first', RELEASES.every((r, i) => i === 0 || compareVersions(RELEASES[i - 1].version, r.version) > 0));
 });
 
 section('saved runs: one per mode and difficulty', () => {

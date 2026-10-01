@@ -121,6 +121,8 @@ export const MODE_RULES = {
    * auto-shuffles (each deadlock consumes one). Keeps the mode score-chase shaped.
    */
   endlessShuffles: 3,
+  /** Shuffles an Endless run earns each time it levels up. */
+  endlessShufflesPerLevel: 1,
 };
 
 // ── Scoring (spec §5.5) ───────────────────────────────────────────────────────
@@ -184,6 +186,8 @@ export const STORAGE = {
   highScores: 'bejeweled.highscores.v1',
   savedRun: 'bejeweled.savedrun.v1',
   settings: 'bejeweled.settings.v1',
+  /** The last version whose What's new note this player has seen (src/ui/whatsnew.ts). */
+  seenVersion: 'bejeweled.seenversion.v1',
 };
 
 export type HighScoreKey = `${Mode}:${Difficulty}`;

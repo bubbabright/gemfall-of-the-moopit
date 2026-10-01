@@ -47,8 +47,9 @@ export const BUILD_TIME = typeof __DEV_SERVER__ === 'boolean' && __DEV_SERVER__
     ? __BUILD_TIME__
     : 'unbuilt';
 
-/** Where the code lives; linked under the menu's version line. */
+/** Where the code lives; the menu's link under the version line goes to its changelog. */
 export const REPO_URL = 'https://github.com/bubbabright/gemfall-of-the-moopit';
+export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
 
 /** e.g. "v0.2.0 · d07b4a8" — version first, then the commit it was built from. */
 export const VERSION_LABEL = `v${APP_VERSION} · ${BUILD_ID}`;

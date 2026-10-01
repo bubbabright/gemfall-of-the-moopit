@@ -157,7 +157,8 @@ function portraitLayout(pw: number, ph: number): Layout {
       statLabel: { x: width - 58, y: hudTop + 12, originX: 1 },
       stat: { x: width - 58, y: hudTop + 38, originX: 1 },
       level: { x: 58, y: hudTop + 96, originX: 0 },
-      target: { x: width - 58, y: hudTop + 96, originX: 1 },
+      // x is set at runtime, just after the LEVEL label (GameScene.updateHud).
+      target: { x: 58, y: hudTop + 96, originX: 0 },
       bar: { x: 58, y: hudTop + 128, w: width - 116 },
     },
     controls: {
@@ -193,7 +194,6 @@ function landscapeLayout(pw: number, ph: number): Layout {
   const plaqueH = 300;
   const py = Math.round((height - plaqueH) / 2);
   const inX = leftX + 20;
-  const inR = leftX + colW - 20;
 
   // Buttons: four stacked, centred vertically.
   const controlH = 76;
@@ -217,7 +217,7 @@ function landscapeLayout(pw: number, ph: number): Layout {
       statLabel: { x: inX, y: py + 118, originX: 0 },
       stat: { x: inX, y: py + 144, originX: 0 },
       level: { x: inX, y: py + 228, originX: 0 },
-      target: { x: inR, y: py + 228, originX: 1 },
+      target: { x: inX, y: py + 228, originX: 0 },
       bar: { x: inX, y: py + 262, w: colW - 40 },
     },
     controls: {

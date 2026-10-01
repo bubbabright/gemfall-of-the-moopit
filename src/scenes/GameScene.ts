@@ -710,7 +710,11 @@ export default class GameScene extends Phaser.Scene {
     const ratio = Phaser.Math.Clamp(this.levelScore / target, 0, 1);
 
     this.levelText.setText(`LEVEL ${this.level}`);
-    this.targetText.setText(`${Math.min(this.levelScore, target).toLocaleString()} / ${target.toLocaleString()}`);
+    // Progress sits right after LEVEL N, on its side of the plaque, so it reads as the level's
+    // and not as the SHUFFLES / MOVES / TIME figure above the other side.
+    this.targetText
+      .setText(`${Math.min(this.levelScore, target).toLocaleString()} / ${target.toLocaleString()} pts`)
+      .setX(this.levelText.x + this.levelText.width + 16);
 
     const { x, y, w } = LAYOUT.hud.bar;
     const h = 12;
@@ -1371,17 +1375,24 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private checkLevelUp(): void {
-    let leveled = false;
+    let gained = 0;
     let target = levelTarget(this.level);
     while (this.levelScore >= target) {
       this.levelScore -= target;
       this.level += 1;
-      leveled = true;
+      gained += 1;
       target = levelTarget(this.level);
     }
-    if (leveled) {
+    if (gained) {
       sfx.levelUp();
       this.showBanner(this.voice.level.title(this.level), pick(this.voice.level.notes, '') || null);
+      // Endless: each level earns a shuffle, so a high score buys a longer run.
+      if (this.mode === 'endless' && Number.isFinite(this.shufflesLeft)) {
+        const earned = gained * MODE_RULES.endlessShufflesPerLevel;
+        this.shufflesLeft += earned;
+        this.showToast(this.voice.toast.shuffleEarned(earned, this.shufflesLeft), '#f0abfc');
+        this.updateHud();
+      }
     }
   }
 
@@ -1777,7 +1788,8 @@ export default class GameScene extends Phaser.Scene {
       levelScore: this.levelScore,
       movesLeft: Number.isFinite(this.movesLeft) ? this.movesLeft : -1,
       timeLeftMs: Number.isFinite(this.timeLeftMs) ? this.timeLeftMs : -1,
-      shuffles: this.shufflesLeft === Number.POSITIVE_INFINITY ? 0 : Math.max(0, MODE_RULES.endlessShuffles - this.shufflesLeft),
+      // Shuffles used, net of any earned by levelling up (so it can go below zero).
+      shuffles: this.shufflesLeft === Number.POSITIVE_INFINITY ? 0 : MODE_RULES.endlessShuffles - this.shufflesLeft,
     });
   }
 

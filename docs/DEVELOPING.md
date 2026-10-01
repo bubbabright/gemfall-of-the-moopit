@@ -65,12 +65,15 @@ src/
   wakeLock.ts        keeps the screen on while a run is being played (see "Installable app")
   messages.ts        every player-facing line, in the default voice and the private one
                      (see "Wording and the private voice" below)
+  whatsnew.ts        What's new notes per version; add one whenever package.json's version goes up
   core/              Phaser-free engine: board, specials, score, storage, types
   core/selftest.ts   engine test suite (dev only)
   scenes/            BootScene (texture generation), MenuScene (shows the HTML menu), GameScene
   ui/front.ts        the front screen: splash, then the HTML menu (see "Opening screen")
   ui/corners.ts      the corner buttons on both screens: speaker (mute) and gear (settings)
   ui/settings.ts     the settings panel behind the gear
+  ui/whatsnew.ts     the What's new sheet: shown once per version to returning players (anyone
+                     with saved data); new players skip it. Seen version in storage.ts
   ui/pill.ts         the rounded in-game button (read the hit-area note in it)
   gfx/gems.ts        procedural gem and power-gem textures
   audio/sfx.ts       procedural WebAudio sound effects and background music
@@ -101,6 +104,7 @@ tools/
 | Change a setting | `src/ui/settings.ts`, stored in `src/core/storage.ts` |
 | Change a button's look or hit area | `src/ui/pill.ts` |
 | Change what the game says | `src/messages.ts` |
+| Announce a new version | bump `version` in `package.json` and add its notes to `src/whatsnew.ts` |
 
 Browser storage keys: `bejeweled.highscores.v1`, `bejeweled.settings.v1`, and one unfinished run
 per mode and difficulty, `bejeweled.savedrun.v1:<mode>:<difficulty>` (the menu offers RESUME

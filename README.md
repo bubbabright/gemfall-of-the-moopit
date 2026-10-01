@@ -19,7 +19,8 @@ reaction is where the big scores come from.
 - A swap that makes no match slides back, and it doesn't cost you a move.
 - Stuck? Press **HINT**. The game also nudges you if you sit still for a while.
 - Out of moves? The board reshuffles itself without costing you a move. In **Endless** you
-  get 3 shuffles, and the game ends when you run out of moves with none left.
+  get 3 shuffles, plus 1 more every time you level up, and the game ends when you run out of
+  moves with none left.
 
 ### Power gems
 
@@ -35,7 +36,7 @@ Make bigger matches to get special gems. Match a special gem to set it off.
 
 | Mode | Rules |
 |---|---|
-| **Endless** | No clock and no move limit: chase the high score until you run out of shuffles |
+| **Endless** | No clock and no move limit: chase the high score until you run out of shuffles (each level up earns one) |
 | **Timed** | Score as much as you can in 60 seconds |
 | **Moves** | You get 30 moves |
 
