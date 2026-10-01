@@ -32,6 +32,14 @@ Make bigger matches to get special gems. Match a special gem to set it off.
 | An L or T shape | **Bomb** | Clears everything around it |
 | 5 in a row | **Hypercube** (the rainbow one) | Swap it with any gem to clear every gem of that colour |
 
+- A 4 across makes a blaster that clears across; a 4 down makes one that clears down.
+- Power gems set each other off: a line blast that runs through a bomb blows the bomb up too.
+- Swap two hypercubes together to clear the whole board.
+
+Every power gem and match shape above is played automatically before each update, on a
+phone-sized screen with real taps and swipes. How that works is in
+[docs/DEVELOPING.md](docs/DEVELOPING.md#check-a-change).
+
 ### Modes
 
 | Mode | Rules |
@@ -101,6 +109,7 @@ by code, and no art or code comes from the real Bejeweled. It's built with
 | If you want to… | Read |
 |---|---|
 | Run it yourself or change it | [docs/DEVELOPING.md](docs/DEVELOPING.md) |
+| See how it's tested | [docs/DEVELOPING.md › Check a change](docs/DEVELOPING.md#check-a-change) |
 | Know how it gets online | [docs/DEPLOYING.md](docs/DEPLOYING.md) |
 | See what changed and when | [CHANGELOG.md](CHANGELOG.md) |
 | Read the original design | [bejeweled-spec.md](bejeweled-spec.md) |
